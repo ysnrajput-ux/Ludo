@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ludo Pass & Play</title>
+
+<style>
+body{
+    margin:0;
+    padding:0;
+    font-family:Arial;
+    background:#222;
+    color:white;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+h1{
+    margin:15px;
+}
+
+#game{
+    position:relative;
+    width:600px;
+    height:600px;
+    background:#fff;
+    display:grid;
+    grid-template-columns:repeat(15,1fr);
+    grid-template-rows:repeat(15,1fr);
+    border:5px solid #000;
+}
+
+.cell{
+    border:1px solid #ccc;
+    box-sizing:border-box;
+    position:relative;
+}
+
+.red{background:#e74c3c;}
+.green{background:#27ae60;}
+.yellow{background:#f1c40f;}
+.blue{background:#3498db;}
+
+.safe{
+    background:#aaa !important;
+}
+
+.token{
+    width:70%;
+    height:70%;
+    border-radius:50%;
+    position:absolute;
+    top:15%;
+    left:15%;
+    cursor:pointer;
+    border:2px solid black;
+}
+
+.token.red{background:red;}
+.token.green{background:green;}
+.token.yellow{background:yellow;}
+.token.blue{background:blue;}
+
+#controls{
+    margin:20px;
+    text-align:center;
+}
+
+button{
+    padding:10px 20px;
+    font-size:18px;
+    cursor:pointer;
+}
+
+#status{
+    margin-top:10px;
+    font-size:20px;
+}
+</style>
+</head>
+<body>
+
+<h1>Ludo Pass & Play</h1>
+
+<div id="game"></div>
+
+<div id="controls">
+    <button id="rollBtn">Roll Dice</button>
+    <div id="dice">🎲</div>
+    <div id="status"></div>
+</div>
+
+<script>
+
+const game = document.getElementById("game");
+const statusText = document.getElementById("status");
+const diceText = document.getElementById("dice");
+const rollBtn = document.getElementById("rollBtn");
+
+const SIZE = 15;
+const cells = [];
+
+for(let i=0;i<SIZE*SIZE;i++){
+    const div = document.createElement("div");
+    div.classList.add("cell");
+    game.appendChild(div);
+    cells.push(div);
+}
+
+const path = [
+    6,7,8,23,38,53,68,83,98,113,128,127,126,
+    125,124,123,122,121,136,151,166,181,196,
+    211,212,213,214,215,216,217,218,203,188,
+    173,158,143,128,113,98,83,68,53,38,39,
+    40,41,42,43,44,45,60,75,90,105,120
+];
+
+const players = [
+    {color:"red", start:-1},
+    {color:"green", start:-1},
+    {color:"yellow", start:-1},
+    {color:"blue", start:-1}
+];
+
+let currentPlayer = 0;
+let diceValue = 0;
+
+const tokens = [];
+
+players.forEach((p,pIndex)=>{
+    for(let i=0;i<4;i++){
+        const token = document.createElement("div");
+        token.classList.add("token", p.color);
+        token.dataset.player = pIndex;
+        token.dataset.pos = -1;
+        token.dataset.id = i;
+
+        token.addEventListener("click", ()=>moveToken(token));
+
+        game.appendChild(token);
+
+        positionHome(token,p.color,i);
+
+        tokens.push(token);
+    }
+});
+
+function positionHome(token,color,index){
+
+    const homes = {
+        red:[
+            [1,1],[1,3],[3,1],[3,3]
+        ],
+        green:[
+            [1,11],[1,13],[3,11],[3,13]
+        ],
+        yellow:[
+            [11,11],[11,13],[13,11],[13,13]
+        ],
+        blue:[
+            [11,1],[11,3],[13,1],[13,3]
+        ]
+    };
+
+    const pos = homes[color][index];
+
+    setTokenPosition(token,pos[0],pos[1]);
+}
+
+function setTokenPosition(token,row,col){
+    token.style.top = `calc(${row} * 40px + 6px)`;
+    token.style.left = `calc(${col} * 40px + 6px)`;
+}
+
+function getCellCoord(index){
+    const row = Math.floor(index/15);
+    const col = index%15;
+    return [row,col];
+}
+
+function renderToken(token){
+
+    const pos = parseInt(token.dataset.pos);
+
+    if(pos === -1){
+        positionHome(
+            token,
+            players[token.dataset.player].color,
+            token.dataset.id
+        );
+    }else{
+        const cellIndex = path[pos % path.length];
+        const [r,c] = getCellCoord(cellIndex);
+        setTokenPosition(token,r,c);
+    }
+}
+
+function updateStatus(){
+    statusText.innerHTML =
+        `Current Turn: ${players[currentPlayer].color.toUpperCase()}`;
+}
+
+updateStatus();
+
+rollBtn.onclick = ()=>{
+
+    diceValue = Math.floor(Math.random()*6)+1;
+
+    diceText.innerHTML = `🎲 ${diceValue}`;
+
+    statusText.innerHTML =
+        `${players[currentPlayer].color.toUpperCase()} rolled ${diceValue}`;
+};
+
+function moveToken(token){
+
+    if(parseInt(token.dataset.player)!==currentPlayer)
+        return;
+
+    if(diceValue===0)
+        return;
+
+    let pos = parseInt(token.dataset.pos);
+
+    if(pos===-1){
+
+        if(diceValue===6){
+            pos = 0;
+        }else{
+            return;
+        }
+
+    }else{
+
+        pos += diceValue;
+
+        if(pos >= path.length){
+            alert(players[currentPlayer].color + " wins!");
+            location.reload();
+        }
+    }
+
+    token.dataset.pos = pos;
+
+    renderToken(token);
+
+    checkKill(token);
+
+    if(diceValue!==6){
+        currentPlayer++;
+        currentPlayer%=players.length;
+    }
+
+    diceValue = 0;
+
+    updateStatus();
+}
+
+function checkKill(activeToken){
+
+    const activePos = activeToken.dataset.pos;
+
+    tokens.forEach(t=>{
+
+        if(t===activeToken)
+            return;
+
+        if(t.dataset.pos===activePos){
+
+            if(t.dataset.player!==activeToken.dataset.player){
+
+                t.dataset.pos = -1;
+
+                renderToken(t);
+            }
+        }
+    });
+}
+
+tokens.forEach(renderToken);
+
+</script>
+
+</body>
+</html>
