@@ -1,783 +1,1066 @@
-import { useState, useEffect, useCallback } from 'react';
-
-// Constants
-const PLAYERS = ['red', 'green', 'yellow', 'blue'] as const;
-type PlayerColor = typeof PLAYERS[number];
-
-const DICE_SYMBOLS = ['⚁', '⚂', '⚃', '⚄', '⚅', '⚀'];
-
-// Safe positions on the main path
-const SAFE_POSITIONS = [0, 8, 13, 21, 26, 34, 39, 47];
-
-// Main path coordinates (52 positions, clockwise from red start)
-const MAIN_PATH = [
-  // Red side (positions 0-12)
-  {r: 6, c: 1}, {r: 6, c: 2}, {r: 6, c: 3}, {r: 6, c: 4}, {r: 6, c: 5},
-  {r: 5, c: 6}, {r: 4, c: 6}, {r: 3, c: 6}, {r: 2, c: 6}, {r: 1, c: 6}, {r: 0, c: 6},
-  {r: 0, c: 7},
-  {r: 0, c: 8},
-  // Green side (positions 13-25)
-  {r: 1, c: 8}, {r: 2, c: 8}, {r: 3, c: 8}, {r: 4, c: 8}, {r: 5, c: 8},
-  {r: 6, c: 9}, {r: 6, c: 10}, {r: 6, c: 11}, {r: 6, c: 12}, {r: 6, c: 13}, {r: 6, c: 14},
-  {r: 7, c: 14},
-  {r: 8, c: 14},
-  // Yellow side (positions 26-38)
-  {r: 8, c: 13}, {r: 8, c: 12}, {r: 8, c: 11}, {r: 8, c: 10}, {r: 8, c: 9},
-  {r: 9, c: 8}, {r: 10, c: 8}, {r: 11, c: 8}, {r: 12, c: 8}, {r: 13, c: 8}, {r: 14, c: 8},
-  {r: 14, c: 7},
-  {r: 14, c: 6},
-  // Blue side (positions 39-51)
-  {r: 13, c: 6}, {r: 12, c: 6}, {r: 11, c: 6}, {r: 10, c: 6}, {r: 9, c: 6},
-  {r: 8, c: 5}, {r: 8, c: 4}, {r: 8, c: 3}, {r: 8, c: 2}, {r: 8, c: 1}, {r: 8, c: 0},
-  {r: 7, c: 0}
-];
-
-// Entry lanes (home stretch)
-const ENTRY_LANES: Record<PlayerColor, {r: number, c: number}[]> = {
-  red: [{r: 7, c: 1}, {r: 7, c: 2}, {r: 7, c: 3}, {r: 7, c: 4}, {r: 7, c: 5}, {r: 7, c: 6}],
-  green: [{r: 1, c: 7}, {r: 2, c: 7}, {r: 3, c: 7}, {r: 4, c: 7}, {r: 5, c: 7}, {r: 6, c: 7}],
-  yellow: [{r: 7, c: 13}, {r: 7, c: 12}, {r: 7, c: 11}, {r: 7, c: 10}, {r: 7, c: 9}, {r: 7, c: 8}],
-  blue: [{r: 13, c: 7}, {r: 12, c: 7}, {r: 11, c: 7}, {r: 10, c: 7}, {r: 9, c: 7}, {r: 8, c: 7}]
-};
-
-const START_POSITIONS: Record<PlayerColor, number> = { red: 0, green: 13, yellow: 26, blue: 39 };
-const ENTRY_POINTS: Record<PlayerColor, number> = { red: 50, green: 11, yellow: 24, blue: 37 };
-
-interface Token {
-  position: number;
-  finished: boolean;
-}
-
-interface GameState {
-  tokens: Record<PlayerColor, Token[]>;
-  currentPlayerIndex: number;
-  diceValue: number | null;
-  rolled: boolean;
-  extraTurn: boolean;
-  consecutiveSixes: number;
-  winner: PlayerColor | null;
-  players: PlayerColor[];
-  botPlayers: PlayerColor[];
-  botDifficulty: 'easy' | 'medium' | 'hard';
-  message: string;
-}
-
-interface SetupState {
-  numPlayers: number;
-  numBots: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-}
-
-function App() {
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const [setupState, setSetupState] = useState<SetupState>({
-    numPlayers: 0,
-    numBots: 0,
-    difficulty: 'medium'
-  });
-  const [isRolling, setIsRolling] = useState(false);
-
-  const startGame = useCallback(() => {
-    const totalPlayers = setupState.numPlayers + setupState.numBots;
-    const players = PLAYERS.slice(0, totalPlayers) as PlayerColor[];
-    const botPlayers = PLAYERS.slice(setupState.numPlayers, totalPlayers) as PlayerColor[];
-
-    const tokens: Record<PlayerColor, Token[]> = {
-      red: Array(4).fill(null).map(() => ({ position: -1, finished: false })),
-      green: Array(4).fill(null).map(() => ({ position: -1, finished: false })),
-      yellow: Array(4).fill(null).map(() => ({ position: -1, finished: false })),
-      blue: Array(4).fill(null).map(() => ({ position: -1, finished: false }))
-    };
-
-    setGameState({
-      tokens,
-      currentPlayerIndex: 0,
-      diceValue: null,
-      rolled: false,
-      extraTurn: false,
-      consecutiveSixes: 0,
-      winner: null,
-      players,
-      botPlayers,
-      botDifficulty: setupState.difficulty,
-      message: 'Roll the dice to start your turn.'
-    });
-  }, [setupState]);
-
-  // Bot AI
-  useEffect(() => {
-    if (!gameState || gameState.winner || isRolling) return;
-
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    const isBot = gameState.botPlayers.includes(currentPlayer);
-
-    if (isBot && !gameState.rolled) {
-      const timer = setTimeout(() => rollDice(), 800);
-      return () => clearTimeout(timer);
-    }
-
-    if (isBot && gameState.rolled && gameState.diceValue !== null) {
-      const timer = setTimeout(() => makeBotMove(), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [gameState?.currentPlayerIndex, gameState?.rolled, gameState?.winner, isRolling, gameState]);
-
-  const calculateNewPosition = (color: PlayerColor, currentPos: number, steps: number): number | null => {
-    const entryPoint = ENTRY_POINTS[color];
-
-    if (currentPos === -1) return START_POSITIONS[color];
-
-    let stepsToEntry = currentPos <= entryPoint ? entryPoint - currentPos : (52 - currentPos) + entryPoint;
-
-    if (stepsToEntry < steps && currentPos !== entryPoint) {
-      const stepsInLane = steps - stepsToEntry;
-      return stepsInLane <= 6 ? 100 + stepsInLane : null;
-    } else if (currentPos === entryPoint || (steps > stepsToEntry && stepsToEntry === 0)) {
-      const stepsInLane = steps - stepsToEntry;
-      return stepsInLane <= 6 ? 100 + stepsInLane : null;
-    }
-
-    let newPos = currentPos + steps;
-    return newPos >= 52 ? newPos - 52 : newPos;
-  };
-
-  const canMove = (color: PlayerColor, diceValue: number, tokens: Record<PlayerColor, Token[]>): boolean => {
-    for (let i = 0; i < 4; i++) {
-      const token = tokens[color][i];
-      if (token.finished) continue;
-
-      if (token.position === -1 && diceValue === 6) return true;
-      if (token.position >= 0 && token.position < 100) {
-        const newPos = calculateNewPosition(color, token.position, diceValue);
-        if (newPos !== null) return true;
-      }
-      if (token.position >= 100) {
-        const lanePos = token.position - 100;
-        if (lanePos + diceValue <= 6) return true;
-      }
-    }
-    return false;
-  };
-
-  const rollDice = () => {
-    if (!gameState || gameState.winner || isRolling) return;
-
-    setIsRolling(true);
-
-    setTimeout(() => {
-      const diceValue = Math.floor(Math.random() * 6) + 1;
-      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-      let consecutiveSixes = gameState.consecutiveSixes;
-
-      if (diceValue === 6) {
-        consecutiveSixes++;
-        if (consecutiveSixes >= 3) {
-          setGameState(prev => prev ? {
-            ...prev,
-            message: 'Three 6s in a row! Turn lost.',
-            consecutiveSixes: 0,
-            rolled: false,
-            diceValue: null
-          } : null);
-          setIsRolling(false);
-          setTimeout(() => endTurn(), 1500);
-          return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classic Ludo Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-      } else {
-        consecutiveSixes = 0;
-      }
 
-      if (!canMove(currentPlayer, diceValue, gameState.tokens)) {
-        const newConsecutive = diceValue === 6 ? consecutiveSixes : 0;
-        setGameState(prev => prev ? {
-          ...prev,
-          diceValue,
-          rolled: true,
-          consecutiveSixes: newConsecutive,
-          message: diceValue === 6 ? 'No moves but rolled 6. Rolling again...' : 'No valid moves. Skipping turn...'
-        } : null);
-        setIsRolling(false);
-
-        if (diceValue === 6) {
-          setTimeout(() => {
-            setGameState(prev => prev ? { ...prev, rolled: false, diceValue: null } : null);
-            setTimeout(() => rollDice(), 500);
-          }, 1000);
-        } else {
-          setTimeout(() => endTurn(), 1000);
+        body {
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 10px;
         }
-        return;
-      }
 
-      setGameState(prev => prev ? {
-        ...prev,
-        diceValue,
-        rolled: true,
-        consecutiveSixes,
-        message: diceValue === 6 ? `Rolled ${diceValue}. Roll again after moving!` : `Rolled ${diceValue}. Select a token to move.`
-      } : null);
-      setIsRolling(false);
-    }, 500);
-  };
+        .game-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 1100px;
+        }
 
-  const selectToken = (color: PlayerColor, tokenIndex: number) => {
-    if (!gameState || gameState.winner || !gameState.rolled || gameState.diceValue === null) return;
+        .setup-screen {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 500px;
+            text-align: center;
+            display: none;
+        }
 
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    if (color !== currentPlayer) return;
+        .setup-screen.active {
+            display: block;
+        }
 
-    const token = gameState.tokens[color][tokenIndex];
-    if (token.finished) return;
+        .setup-screen h1 {
+            color: #1a1a2e;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
 
-    let targetPos: number;
-    let fromHome = false;
+        .setup-section {
+            margin-bottom: 30px;
+        }
 
-    if (token.position === -1) {
-      if (gameState.diceValue !== 6) return;
-      targetPos = START_POSITIONS[color];
-      fromHome = true;
-    } else if (token.position >= 100) {
-      const newLanePos = (token.position - 100) + gameState.diceValue;
-      if (newLanePos > 6) return;
-      targetPos = 100 + newLanePos;
-    } else {
-      const newPos = calculateNewPosition(color, token.position, gameState.diceValue);
-      if (newPos === null) return;
-      targetPos = newPos;
-    }
+        .setup-section label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
 
-    moveToken(color, tokenIndex, targetPos, fromHome);
-  };
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
 
-  const moveToken = (color: PlayerColor, tokenIndex: number, targetPos: number, fromHome: boolean) => {
-    if (!gameState) return;
+        .setup-btn {
+            padding: 12px 24px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
 
-    const newTokens = { ...gameState.tokens };
-    const playerTokens = [...newTokens[color]];
-    const token = { ...playerTokens[tokenIndex] };
+        .setup-btn:hover {
+            border-color: #666;
+            background: #f5f5f5;
+        }
 
-    let extraTurn = false;
-    let message = '';
+        .setup-btn.selected {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
 
-    if (targetPos === 106) {
-      token.finished = true;
-      token.position = 57;
-      message = `${color.toUpperCase()} finished a token!`;
-      extraTurn = gameState.diceValue === 6;
-    } else {
-      token.position = targetPos;
+        .start-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
 
-      if (targetPos < 100 && !SAFE_POSITIONS.includes(targetPos) && !fromHome) {
-        PLAYERS.filter(p => p !== color).forEach(otherColor => {
-          newTokens[otherColor] = newTokens[otherColor].map(t => {
-            if (!t.finished && t.position === targetPos) {
-              message = `${color.toUpperCase()} killed ${otherColor.toUpperCase()}'s token!`;
-              extraTurn = true;
-              return { ...t, position: -1 };
+        .start-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .start-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .game-board-container {
+            position: relative;
+            display: none;
+        }
+
+        .game-board-container.active {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .board {
+            width: 580px;
+            height: 580px;
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            gap: 0;
+            background: white;
+            border: 8px solid #000;
+            border-radius: 0;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+
+        .cell {
+            border: 1px solid #999;
+            position: relative;
+            background: white;
+        }
+
+        .home-area {
+            position: absolute;
+            width: 145px;
+            height: 145px;
+            border: 4px solid #000;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 10px;
+        }
+
+        .home-red {
+            top: 0;
+            left: 0;
+            background: #d32f2f;
+        }
+
+        .home-green {
+            top: 0;
+            right: 0;
+            background: #388e3c;
+        }
+
+        .home-yellow {
+            bottom: 0;
+            right: 0;
+            background: #fbc02d;
+        }
+
+        .home-blue {
+            bottom: 0;
+            left: 0;
+            background: #1976d2;
+        }
+
+        .home-slot {
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #000;
+        }
+
+        .token {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset -1px -1px 2px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.2);
+            font-size: 0;
+        }
+
+        .token.red {
+            background: radial-gradient(circle at 35% 35%, #ff4444, #cc0000);
+        }
+
+        .token.green {
+            background: radial-gradient(circle at 35% 35%, #66bb6a, #2e7d32);
+        }
+
+        .token.yellow {
+            background: radial-gradient(circle at 35% 35%, #ffeb3b, #f57f17);
+            color: #000;
+        }
+
+        .token.blue {
+            background: radial-gradient(circle at 35% 35%, #42a5f5, #1565c0);
+        }
+
+        .token.selectable {
+            animation: tokenPulse 1.5s infinite;
+            box-shadow: 0 0 20px rgba(255,255,255,0.8), 0 2px 8px rgba(0,0,0,0.4), inset -1px -1px 2px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.2);
+        }
+
+        @keyframes tokenPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            width: 320px;
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .current-player-display {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: white;
+            text-align: center;
+        }
+
+        .current-player-display.red {
+            background: #d32f2f;
+        }
+
+        .current-player-display.green {
+            background: #388e3c;
+        }
+
+        .current-player-display.yellow {
+            background: #fbc02d;
+            color: #000;
+        }
+
+        .current-player-display.blue {
+            background: #1976d2;
+        }
+
+        .dice-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .dice-value {
+            font-size: 60px;
+            padding: 15px;
+            background: white;
+            border: 3px solid #000;
+            border-radius: 12px;
+            display: inline-block;
+            min-width: 80px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .dice-value.rolling {
+            animation: diceRoll 0.6s;
+        }
+
+        @keyframes diceRoll {
+            0% { transform: rotateX(0deg) rotateY(0deg); }
+            50% { transform: rotateX(360deg) rotateY(360deg); }
+            100% { transform: rotateX(720deg) rotateY(720deg); }
+        }
+
+        .roll-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #d32f2f, #b71c1c);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .roll-button:hover:not(:disabled) {
+            transform: scale(1.02);
+        }
+
+        .roll-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .message-box {
+            text-align: center;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .players-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .player-status {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .player-status.red {
+            background: #d32f2f;
+        }
+
+        .player-status.green {
+            background: #388e3c;
+        }
+
+        .player-status.yellow {
+            background: #fbc02d;
+            color: #000;
+        }
+
+        .player-status.blue {
+            background: #1976d2;
+        }
+
+        .player-name {
+            flex: 1;
+        }
+
+        .player-tokens {
+            font-size: 0.85rem;
+        }
+
+        .new-game-button {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .new-game-button:hover {
+            background: #555;
+        }
+
+        .winner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .winner-overlay.active {
+            display: flex;
+        }
+
+        .winner-card {
+            background: white;
+            padding: 60px 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: winnerPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 5px solid #000;
+        }
+
+        @keyframes winnerPop {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        .winner-card h2 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .winner-card p {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .winner-card button {
+            padding: 15px 40px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .winner-card button:hover {
+            background: #45a049;
+        }
+
+        @media (max-width: 768px) {
+            .board {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1;
+                max-width: 500px;
             }
-            return t;
-          });
-        });
-      }
 
-      extraTurn = extraTurn || gameState.diceValue === 6;
-    }
-
-    playerTokens[tokenIndex] = token;
-    newTokens[color] = playerTokens;
-
-    const allFinished = playerTokens.every(t => t.finished);
-    let winner = gameState.winner;
-    if (allFinished) {
-      winner = color;
-      message = `${color.toUpperCase()} WINS!`;
-    }
-
-    setGameState(prev => prev ? {
-      ...prev,
-      tokens: newTokens,
-      winner,
-      message,
-      extraTurn,
-      rolled: extraTurn,
-      diceValue: extraTurn ? null : prev.diceValue,
-      consecutiveSixes: extraTurn ? prev.consecutiveSixes : 0
-    } : null);
-
-    if (!winner && !extraTurn) {
-      setTimeout(() => endTurn(), 600);
-    } else if (extraTurn && !winner) {
-      setTimeout(() => {
-        setGameState(prev => prev ? {
-          ...prev,
-          message: 'Rolled 6. Roll again!'
-        } : null);
-      }, 500);
-    }
-  };
-
-  const endTurn = () => {
-    if (!gameState) return;
-
-    const nextIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
-
-    setGameState(prev => prev ? {
-      ...prev,
-      currentPlayerIndex: nextIndex,
-      rolled: false,
-      diceValue: null,
-      extraTurn: false,
-      consecutiveSixes: 0,
-      message: "Roll the dice to start your turn."
-    } : null);
-  };
-
-  const makeBotMove = () => {
-    if (!gameState || !gameState.rolled || gameState.diceValue === null) return;
-
-    const color = gameState.players[gameState.currentPlayerIndex];
-    const tokens = gameState.tokens[color];
-    let bestToken = -1;
-    let bestScore = -Infinity;
-
-    for (let i = 0; i < 4; i++) {
-      const token = tokens[i];
-      if (token.finished) continue;
-
-      let score = 0;
-      let targetPos: number | undefined;
-
-      if (token.position === -1) {
-        if (gameState.diceValue === 6) {
-          score = 15;
-          targetPos = START_POSITIONS[color];
-        }
-      } else if (token.position >= 100) {
-        const newLanePos = (token.position - 100) + gameState.diceValue;
-        if (newLanePos <= 6) {
-          score = 100 + newLanePos;
-          targetPos = 100 + newLanePos;
-        }
-      } else {
-        const newPos = calculateNewPosition(color, token.position, gameState.diceValue);
-        if (newPos !== null) {
-          targetPos = newPos;
-          if (targetPos >= 100) {
-            score = 80 + (targetPos - 100);
-          } else {
-            if (gameState.botDifficulty === 'hard') {
-              PLAYERS.filter(p => p !== color).forEach(otherColor => {
-                gameState.tokens[otherColor].forEach(t => {
-                  if (!t.finished && t.position === targetPos && t.position >= 0 && !SAFE_POSITIONS.includes(targetPos)) {
-                    score += 90;
-                  }
-                });
-              });
-              if (SAFE_POSITIONS.includes(targetPos)) score += 40;
-              const entryPoint = ENTRY_POINTS[color];
-              const distToEntry = token.position <= entryPoint
-                ? entryPoint - targetPos
-                : targetPos <= entryPoint ? entryPoint - targetPos : (52 - targetPos) + entryPoint;
-              score += 52 - distToEntry;
-            } else if (gameState.botDifficulty === 'medium') {
-              score = targetPos;
-              if (SAFE_POSITIONS.includes(targetPos)) score += 25;
-            } else {
-              score = Math.random() * 50;
+            .control-panel {
+                width: 100%;
+                max-width: 500px;
             }
-          }
+
+            .game-container {
+                flex-direction: column;
+            }
+
+            .setup-screen {
+                padding: 30px 20px;
+            }
+
+            .setup-screen h1 {
+                font-size: 2rem;
+            }
         }
-      }
 
-      if (score > bestScore) {
-        bestScore = score;
-        bestToken = i;
-      }
-    }
-
-    if (bestToken !== -1) {
-      selectToken(color, bestToken);
-    } else {
-      endTurn();
-    }
-  };
-
-  const getCellClass = (r: number, c: number): string => {
-    // Home corners
-    if (r < 6 && c < 6) return 'home-red';
-    if (r < 6 && c > 8) return 'home-green';
-    if (r > 8 && c > 8) return 'home-yellow';
-    if (r > 8 && c < 6) return 'home-blue';
-
-    // Center triangle
-    if (r >= 6 && r <= 8 && c >= 6 && c <= 8) {
-      if (r === 7 && c === 7) return 'center-triangle';
-      if ((r === 6 || r === 8) && (c === 6 || c === 8)) return 'center-corner';
-      return 'center-white';
-    }
-
-    // Entry lanes
-    if (r === 7 && c >= 1 && c <= 5) return 'path-red';
-    if (c === 7 && r >= 1 && r <= 5) return 'path-green';
-    if (r === 7 && c >= 9 && c <= 13) return 'path-yellow';
-    if (c === 7 && r >= 9 && r <= 13) return 'path-blue';
-
-    // Start positions
-    if (r === 6 && c === 1) return 'path-red';
-    if (r === 1 && c === 8) return 'path-green';
-    if (r === 8 && c === 13) return 'path-yellow';
-    if (r === 13 && c === 6) return 'path-blue';
-
-    // Safe spots
-    if ((r === 2 && c === 6) || (r === 6 && c === 2) ||
-        (r === 2 && c === 8) || (r === 6 && c === 12) ||
-        (r === 8 && c === 12) || (r === 12 && c === 8) ||
-        (r === 12 && c === 6) || (r === 8 && c === 2)) {
-      return 'safe';
-    }
-
-    return '';
-  };
-
-  const getTokenPosition = (color: PlayerColor, token: Token) => {
-    if (token.position === -1) {
-      return { inHome: true, index: 0 };
-    } else if (token.position >= 100) {
-      const lanePos = token.position - 100;
-      const coords = ENTRY_LANES[color][lanePos];
-      return { inHome: false, coords };
-    } else if (token.position === 57) {
-      return { inHome: false, coords: { r: -1, c: -1 } };
-    } else {
-      const coords = MAIN_PATH[token.position];
-      return { inHome: false, coords };
-    }
-  };
-
-  const canSelectToken = (color: PlayerColor, token: Token): boolean => {
-    if (!gameState || !gameState.rolled || gameState.diceValue === null) return false;
-    if (token.finished) return false;
-
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    if (color !== currentPlayer) return false;
-    if (gameState.botPlayers.includes(color)) return false;
-
-    if (token.position === -1) {
-      return gameState.diceValue === 6;
-    } else if (token.position >= 100) {
-      const newLanePos = (token.position - 100) + gameState.diceValue;
-      return newLanePos <= 6;
-    } else {
-      const newPos = calculateNewPosition(color, token.position, gameState.diceValue);
-      return newPos !== null;
-    }
-  };
-
-  // Setup screen
-  if (!gameState) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full border-2 border-gray-200">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Classic Ludo</h2>
-
-          <div className="mb-8">
-            <label className="block text-gray-700 font-bold mb-4 text-lg">Players:</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[1, 2, 3, 4].map(n => (
-                <button
-                  key={n}
-                  onClick={() => {
-                    const bots = n === 1 ? 3 : n === 4 ? 0 : 0;
-                    setSetupState(prev => ({ ...prev, numPlayers: n, numBots: bots }));
-                  }}
-                  className={`py-3 rounded-xl font-bold transition-all border-2 ${
-                    setupState.numPlayers === n
-                      ? 'bg-green-500 border-green-600 text-white shadow-lg scale-105'
-                      : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {setupState.numPlayers > 0 && setupState.numPlayers < 4 && (
-            <div className="mb-8">
-              <label className="block text-gray-700 font-bold mb-4 text-lg">Bots:</label>
-              <div className="grid grid-cols-2 gap-3">
-                {Array.from({ length: 5 - setupState.numPlayers }, (_, i) => i).map(n => (
-                  <button
-                    key={n}
-                    onClick={() => setSetupState(prev => ({ ...prev, numBots: n }))}
-                    className={`py-3 rounded-xl font-bold transition-all border-2 ${
-                      setupState.numBots === n
-                        ? 'bg-green-500 border-green-600 text-white shadow-lg scale-105'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    {n === 0 ? '0' : n}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(setupState.numPlayers === 1 || (setupState.numPlayers > 0 && setupState.numBots > 0)) && (
-            <div className="mb-8">
-              <label className="block text-gray-700 font-bold mb-4 text-lg">Difficulty:</label>
-              <div className="flex gap-3">
-                {['easy', 'medium', 'hard'].map(d => (
-                  <button
-                    key={d}
-                    onClick={() => setSetupState(prev => ({ ...prev, difficulty: d as 'easy' | 'medium' | 'hard' }))}
-                    className={`flex-1 py-3 rounded-xl font-bold transition-all border-2 capitalize ${
-                      setupState.difficulty === d
-                        ? 'bg-green-500 border-green-600 text-white shadow-lg scale-105'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    {d}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button
-            onClick={startGame}
-            disabled={setupState.numPlayers === 0}
-            className="w-full py-4 rounded-xl font-bold text-white text-lg transition-all disabled:bg-gray-400 disabled:cursor-not-allowed bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg"
-          >
-            Start Game
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Winner screen
-  if (gameState.winner) {
-    const winnerColor = gameState.winner;
-    const colorMap = {
-      red: '#e74c3c',
-      green: '#27ae60',
-      yellow: '#f1c40f',
-      blue: '#3498db'
-    };
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="bg-white rounded-3xl shadow-2xl p-12 text-center max-w-md border-4" style={{ borderColor: colorMap[winnerColor] }}>
-          <h2 className="text-5xl font-bold mb-4" style={{ color: colorMap[winnerColor] }}>
-            {winnerColor.toUpperCase()}
-          </h2>
-          <p className="text-3xl font-bold text-gray-800 mb-2">WINS!</p>
-          <p className="text-gray-600 mb-8 text-lg">All tokens finished</p>
-          <button
-            onClick={() => setGameState(null)}
-            className="px-8 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-lg"
-          >
-            Play Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-  const isBot = gameState.botPlayers.includes(currentPlayer);
-  const colorMap: Record<PlayerColor, string> = {
-    red: '#e74c3c',
-    green: '#27ae60',
-    yellow: '#f1c40f',
-    blue: '#3498db'
-  };
-
-  // Game board
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4 gap-4">
-      <h1 className="text-white text-3xl md:text-4xl font-bold mb-2">Classic Ludo</h1>
-
-      <div className="flex flex-col lg:flex-row gap-6 items-center justify-center w-full max-w-7xl">
-        {/* Board */}
-        <div className="relative" style={{ width: 'min(90vw, 520px)', height: 'min(90vw, 520px)' }}>
-          <div className="grid grid-cols-15 bg-white border-8 border-black rounded-lg shadow-2xl h-full" style={{ aspectRatio: '1 / 1' }}>
-            {Array.from({ length: 15 }).map((_, r) =>
-              Array.from({ length: 15 }).map((_, c) => {
-                const cellClass = getCellClass(r, c);
-                const isSafe = cellClass === 'safe';
-
-                return (
-                  <div
-                    key={`${r}-${c}`}
-                    className={`cell border border-black flex items-center justify-center text-xl font-bold ${cellClass}`}
-                  >
-                    {isSafe && '★'}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Tokens */}
-          {PLAYERS.map(color =>
-            gameState.tokens[color].map((token, index) => {
-              if (token.finished) return null;
-
-              const pos = getTokenPosition(color, token);
-              if (pos.inHome) return null;
-              if (pos.coords.r === -1) return null;
-
-              const cellSize = Math.min(90, 520 / 15) * window.innerWidth / Math.min(90, 520);
-              const finalCellSize = Math.min(90, 520 / 15);
-              const left = pos.coords.c * finalCellSize + finalCellSize * 0.15;
-              const top = pos.coords.r * finalCellSize + finalCellSize * 0.15;
-              const size = finalCellSize * 0.7;
-              const selectable = canSelectToken(color, token);
-
-              return (
-                <div
-                  key={`${color}-${index}-board`}
-                  onClick={() => selectToken(color, index)}
-                  className={`absolute rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer transition-all shadow-lg border-2 hover:scale-110 ${selectable ? 'animate-pulse ring-4 ring-white' : ''}`}
-                  style={{
-                    width: size + 'px',
-                    height: size + 'px',
-                    left: left + '%',
-                    top: top + '%',
-                    zIndex: 10,
-                    backgroundColor: colorMap[color],
-                    borderColor: colorMap[color],
-                    boxShadow: `0 4px 12px ${colorMap[color]}99, inset -2px -2px 4px rgba(0,0,0,0.3), inset 2px 2px 4px rgba(255,255,255,0.3)`,
-                    background: `radial-gradient(circle at 30% 30%, ${colorMap[color]}, ${colorMap[color]}dd 30%, ${colorMap[color]}aa 70%)`
-                  }}
-                >
-                  {index + 1}
+        .cell.center-cross {
+            background: conic-gradient(from 45deg, #d32f2f 0deg, #d32f2f 90deg, #388e3c 90deg, #388e3c 180deg, #fbc02d 180deg, #fbc02d 270deg, #1976d2 270deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="setup-screen active" id="setupScreen">
+            <h1>🎲 Ludo</h1>
+            <div class="setup-section">
+                <label>Select Number of Players</label>
+                <div class="button-group" id="playerCountGroup">
+                    <button class="setup-btn" data-value="1">1 Player</button>
+                    <button class="setup-btn" data-value="2">2 Players</button>
+                    <button class="setup-btn" data-value="3">3 Players</button>
+                    <button class="setup-btn" data-value="4">4 Players</button>
                 </div>
-              );
-            })
-          )}
-
-          {/* Home areas with 3D circles */}
-          {['red', 'green', 'yellow', 'blue'].map(color => (
-            <div
-              key={`home-${color}`}
-              className={`home-area absolute grid grid-cols-2 gap-2 p-3 ${color === 'red' ? 'top-0 left-0 w-[25%] h-[25%]' : color === 'green' ? 'top-0 right-0 w-[25%] h-[25%]' : color === 'yellow' ? 'bottom-0 right-0 w-[25%] h-[25%]' : 'bottom-0 left-0 w-[25%] h-[25%]'}`}
-            >
-              {[0, 1, 2, 3].map(index => {
-                const token = gameState.tokens[color as PlayerColor][index];
-                const showToken = token.position === -1;
-                const selectable = canSelectToken(color as PlayerColor, token);
-
-                return (
-                  <div
-                    key={`${color}-home-${index}`}
-                    className="home-circle rounded-full bg-white flex items-center justify-center shadow-lg border-4"
-                    style={{
-                      borderColor: colorMap[color as PlayerColor],
-                      boxShadow: `0 4px 12px rgba(0,0,0,0.2), inset -2px -2px 4px rgba(0,0,0,0.1), inset 2px 2px 4px rgba(255,255,255,0.5)`,
-                      aspectRatio: '1 / 1'
-                    }}
-                  >
-                    {showToken && (
-                      <div
-                        onClick={() => selectToken(color as PlayerColor, index)}
-                        className={`w-[85%] h-[85%] rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer transition-all border-2 hover:scale-110 ${selectable ? 'animate-pulse ring-2 ring-white' : ''}`}
-                        style={{
-                          backgroundColor: colorMap[color as PlayerColor],
-                          borderColor: colorMap[color as PlayerColor],
-                          boxShadow: `0 3px 8px ${colorMap[color as PlayerColor]}99, inset -2px -2px 3px rgba(0,0,0,0.3), inset 2px 2px 3px rgba(255,255,255,0.3)`,
-                          background: `radial-gradient(circle at 30% 30%, ${colorMap[color as PlayerColor]}, ${colorMap[color as PlayerColor]}dd 30%, ${colorMap[color as PlayerColor]}aa 70%)`
-                        }}
-                      >
-                        {index + 1}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
             </div>
-          ))}
-        </div>
 
-        {/* Control Panel */}
-        <div className="bg-white rounded-2xl shadow-2xl p-6 min-w-[280px] max-w-[320px] border-2 border-gray-200">
-          <div
-            className="text-center py-4 rounded-xl mb-4 font-bold text-lg text-white"
-            style={{ backgroundColor: colorMap[currentPlayer] }}
-          >
-            {isBot ? '🤖 ' : ''}{currentPlayer.toUpperCase()}'s Turn
-          </div>
-
-          <div className="text-center mb-4">
-            <div
-              className={`inline-block text-6xl p-3 bg-white border-4 border-gray-800 rounded-xl shadow-lg ${isRolling ? 'animate-spin' : ''}`}
-              style={{ borderColor: colorMap[currentPlayer] }}
-            >
-              {gameState.diceValue ? DICE_SYMBOLS[gameState.diceValue - 1] : '🎲'}
+            <div class="setup-section" id="botSection" style="display: none;">
+                <label>Add Bots</label>
+                <div class="button-group" id="botCountGroup"></div>
             </div>
-          </div>
 
-          <button
-            onClick={rollDice}
-            disabled={gameState.rolled && !gameState.extraTurn || isBot || isRolling}
-            className="w-full py-3 rounded-xl font-bold text-white mb-3 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg"
-          >
-            {gameState.rolled ? 'Move Token' : 'Roll Dice'}
-          </button>
-
-          <div className="text-center p-3 bg-gray-100 rounded-lg text-sm min-h-[50px] mb-4">
-            {gameState.message}
-          </div>
-
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {gameState.players.map((color, idx) => {
-              const finished = gameState.tokens[color].filter(t => t.finished).length;
-              const isCurrent = idx === gameState.currentPlayerIndex;
-              const isBotPlayer = gameState.botPlayers.includes(color);
-
-              return (
-                <div
-                  key={color}
-                  className={`flex items-center px-3 py-2 rounded-lg border-2 text-white font-bold transition-all ${isCurrent ? 'border-gray-800 scale-105' : 'border-transparent'}`}
-                  style={{ backgroundColor: colorMap[color] }}
-                >
-                  <span className="flex-1">{color.toUpperCase()}{isBotPlayer ? ' 🤖' : ''}</span>
-                  <span className="text-sm">{finished}/4</span>
+            <div class="setup-section" id="difficultySection" style="display: none;">
+                <label>Select Bot Difficulty</label>
+                <div class="button-group" id="difficultyGroup">
+                    <button class="setup-btn" data-value="easy">Easy</button>
+                    <button class="setup-btn selected" data-value="medium">Medium</button>
+                    <button class="setup-btn" data-value="hard">Hard</button>
                 </div>
-              );
-            })}
-          </div>
+            </div>
 
-          <button
-            onClick={() => setGameState(null)}
-            className="w-full py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all mt-4 font-bold"
-          >
-            New Game
-          </button>
+            <button class="start-btn" id="startBtn" disabled>Start Game</button>
         </div>
-      </div>
 
-      <style>{`
-        .grid-cols-15 { grid-template-columns: repeat(15, 1fr); }
-        .home-red { background: #e74c3c !important; border: 4px solid white !important; }
-        .home-green { background: #27ae60 !important; border: 4px solid white !important; }
-        .home-yellow { background: #f1c40f !important; border: 4px solid white !important; }
-        .home-blue { background: #3498db !important; border: 4px solid white !important; }
-        .path-red { background: #ffcccb !important; }
-        .path-green { background: #c8f7c5 !important; }
-        .path-yellow { background: #fff3cd !important; }
-        .path-blue { background: #d4edfc !important; }
-        .safe { background: #e8e8e8 !important; }
-        .center-triangle { background: linear-gradient(135deg, #e74c3c 0%, #e74c3c 25%, #f1c40f 25%, #f1c40f 50%, #27ae60 50%, #27ae60 75%, #3498db 75%, #3498db 100%); }
-        .center-corner { background: white !important; }
-        .center-white { background: white !important; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        .animate-pulse { animation: pulse 2s infinite; }
-      `}</style>
+        <div class="game-board-container" id="gameBoard">
+            <div class="board" id="ludoBoard"></div>
+
+            <div class="control-panel">
+                <div class="current-player-display" id="currentPlayer">Red's Turn</div>
+                <div class="dice-box">
+                    <div class="dice-value" id="diceValue">🎲</div>
+                </div>
+                <button class="roll-button" id="rollBtn">Roll Dice</button>
+                <div class="message-box" id="messageBox">Roll the dice to start!</div>
+                <div class="players-list" id="playersList"></div>
+                <button class="new-game-button" onclick="location.reload()">New Game</button>
+            </div>
+        </div>
     </div>
-  );
-}
 
-export default App;
+    <div class="winner-overlay" id="winnerOverlay">
+        <div class="winner-card">
+            <h2 id="winnerName">Red</h2>
+            <p>WINS! 🎉</p>
+            <button onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const PLAYERS = ['red', 'green', 'yellow', 'blue'];
+        const COLORS = {
+            red: '#d32f2f',
+            green: '#388e3c',
+            yellow: '#fbc02d',
+            blue: '#1976d2'
+        };
+
+        const BOARD_SIZE = 15;
+        const SAFE_SPOTS = [0, 8, 13, 21, 26, 34, 39, 47];
+        const DICE_EMOJIS = ['⚁', '⚂', '⚃', '⚄', '⚅', '⚀'];
+
+        const BOARD_PATH = [
+            {x: 6, y: 1}, {x: 6, y: 2}, {x: 6, y: 3}, {x: 6, y: 4}, {x: 6, y: 5},
+            {x: 5, y: 6}, {x: 4, y: 6}, {x: 3, y: 6}, {x: 2, y: 6}, {x: 1, y: 6}, {x: 0, y: 6},
+            {x: 0, y: 7}, {x: 0, y: 8},
+            {x: 1, y: 8}, {x: 2, y: 8}, {x: 3, y: 8}, {x: 4, y: 8}, {x: 5, y: 8},
+            {x: 6, y: 9}, {x: 6, y: 10}, {x: 6, y: 11}, {x: 6, y: 12}, {x: 6, y: 13}, {x: 6, y: 14},
+            {x: 7, y: 14}, {x: 8, y: 14},
+            {x: 8, y: 13}, {x: 8, y: 12}, {x: 8, y: 11}, {x: 8, y: 10}, {x: 8, y: 9},
+            {x: 9, y: 8}, {x: 10, y: 8}, {x: 11, y: 8}, {x: 12, y: 8}, {x: 13, y: 8}, {x: 14, y: 8},
+            {x: 14, y: 7}, {x: 14, y: 6},
+            {x: 13, y: 6}, {x: 12, y: 6}, {x: 11, y: 6}, {x: 10, y: 6}, {x: 9, y: 6},
+            {x: 8, y: 5}, {x: 8, y: 4}, {x: 8, y: 3}, {x: 8, y: 2}, {x: 8, y: 1}, {x: 8, y: 0},
+            {x: 7, y: 0}
+        ];
+
+        const FINISH_PATH = {
+            red: [{x: 7, y: 2}, {x: 7, y: 3}, {x: 7, y: 4}, {x: 7, y: 5}, {x: 7, y: 6}, {x: 7, y: 7}],
+            green: [{x: 2, y: 7}, {x: 3, y: 7}, {x: 4, y: 7}, {x: 5, y: 7}, {x: 6, y: 7}, {x: 7, y: 7}],
+            yellow: [{x: 7, y: 12}, {x: 7, y: 11}, {x: 7, y: 10}, {x: 7, y: 9}, {x: 7, y: 8}, {x: 7, y: 7}],
+            blue: [{x: 12, y: 7}, {x: 11, y: 7}, {x: 10, y: 7}, {x: 9, y: 7}, {x: 8, y: 7}, {x: 7, y: 7}]
+        };
+
+        const START_POS = {
+            red: 0,
+            green: 13,
+            yellow: 26,
+            blue: 39
+        };
+
+        let gameState = {
+            players: [],
+            currentPlayer: 0,
+            tokens: {},
+            diceValue: null,
+            rolled: false,
+            extraTurn: false,
+            consecutiveSixes: 0,
+            winner: null,
+            botPlayers: [],
+            botDifficulty: 'medium',
+            numPlayers: 0,
+            numBots: 0
+        };
+
+        function initBoard() {
+            const board = document.getElementById('ludoBoard');
+            board.innerHTML = '';
+
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+
+                    if (row < 6 && col < 6) {
+                        cell.style.background = '#d32f2f';
+                    } else if (row < 6 && col > 8) {
+                        cell.style.background = '#388e3c';
+                    } else if (row > 8 && col > 8) {
+                        cell.style.background = '#fbc02d';
+                    } else if (row > 8 && col < 6) {
+                        cell.style.background = '#1976d2';
+                    } else if (row >= 6 && row <= 8 && col >= 6 && col <= 8) {
+                        if (row === 7 && col === 7) {
+                            cell.classList.add('center-cross');
+                        } else {
+                            cell.style.background = 'white';
+                        }
+                    } else if ((row === 7 && col >= 1 && col <= 5) ||
+                               (col === 7 && row >= 1 && row <= 5)) {
+                        cell.style.background = '#ffcccc';
+                    } else if ((row === 7 && col >= 9 && col <= 13) ||
+                               (col === 7 && row >= 9 && row <= 13)) {
+                        cell.style.background = '#ffffcc';
+                    } else if (SAFE_SPOTS.includes(row * 15 + col) ||
+                               (row === 2 && col === 6) || (row === 6 && col === 2) ||
+                               (row === 2 && col === 8) || (row === 6 && col === 12) ||
+                               (row === 8 && col === 12) || (row === 12 && col === 8) ||
+                               (row === 12 && col === 6) || (row === 8 && col === 2)) {
+                        cell.style.background = '#f0f0f0';
+                    } else {
+                        cell.style.background = 'white';
+                    }
+
+                    board.appendChild(cell);
+                }
+            }
+
+            createHomeAreas();
+        }
+
+        function createHomeAreas() {
+            const board = document.getElementById('ludoBoard');
+
+            PLAYERS.forEach(player => {
+                const homeArea = document.createElement('div');
+                homeArea.className = `home-area home-${player}`;
+                homeArea.style.zIndex = '1';
+
+                const positions = {
+                    red: {top: '0px', left: '0px'},
+                    green: {top: '0px', right: '0px'},
+                    yellow: {bottom: '0px', right: '0px'},
+                    blue: {bottom: '0px', left: '0px'}
+                };
+
+                Object.assign(homeArea.style, positions[player]);
+
+                for (let i = 0; i < 4; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'home-slot';
+                    slot.dataset.player = player;
+                    slot.dataset.token = i;
+                    homeArea.appendChild(slot);
+                }
+
+                board.parentElement.appendChild(homeArea);
+            });
+        }
+
+        function initGame() {
+            PLAYERS.forEach(player => {
+                gameState.tokens[player] = Array(4).fill(null).map((_, i) => ({
+                    id: i,
+                    position: -1,
+                    finished: false
+                }));
+            });
+
+            gameState.currentPlayer = 0;
+            gameState.rolled = false;
+            gameState.diceValue = null;
+            gameState.extraTurn = false;
+            gameState.consecutiveSixes = 0;
+            gameState.winner = null;
+
+            renderGame();
+            if (gameState.botPlayers.includes(gameState.players[0])) {
+                setTimeout(() => rollDice(), 500);
+            }
+        }
+
+        function renderGame() {
+            updateCurrentPlayer();
+            updatePlayersList();
+            renderTokens();
+            updateRollButton();
+        }
+
+        function updateCurrentPlayer() {
+            const player = gameState.players[gameState.currentPlayer];
+            const display = document.getElementById('currentPlayer');
+            display.className = `current-player-display ${player}`;
+            display.textContent = `${player.charAt(0).toUpperCase() + player.slice(1)}'s Turn`;
+        }
+
+        function updatePlayersList() {
+            const list = document.getElementById('playersList');
+            list.innerHTML = '';
+
+            gameState.players.forEach(player => {
+                const finished = gameState.tokens[player].filter(t => t.finished).length;
+                const div = document.createElement('div');
+                div.className = `player-status ${player}`;
+                div.innerHTML = `<span class="player-name">${player.toUpperCase()}</span><span class="player-tokens">${finished}/4</span>`;
+                list.appendChild(div);
+            });
+        }
+
+        function renderTokens() {
+            document.querySelectorAll('.token').forEach(t => t.remove());
+
+            const cellSize = document.getElementById('ludoBoard').offsetWidth / BOARD_SIZE;
+
+            PLAYERS.forEach(player => {
+                gameState.tokens[player].forEach((token, idx) => {
+                    if (token.finished) return;
+
+                    const element = document.createElement('div');
+                    element.className = `token ${player}`;
+                    element.dataset.player = player;
+                    element.dataset.token = idx;
+
+                    if (token.position === -1) {
+                        const slots = document.querySelectorAll(`.home-slot[data-player="${player}"][data-token="${idx}"]`);
+                        if (slots[0]) {
+                            const rect = slots[0].getBoundingClientRect();
+                            const parentRect = document.getElementById('ludoBoard').parentElement.getBoundingClientRect();
+                            element.style.left = (rect.left - parentRect.left + rect.width / 2 - 18) + 'px';
+                            element.style.top = (rect.top - parentRect.top + rect.height / 2 - 18) + 'px';
+                        }
+                    } else if (token.position < 52) {
+                        const pos = BOARD_PATH[token.position];
+                        element.style.left = (pos.x * cellSize + cellSize * 0.2) + 'px';
+                        element.style.top = (pos.y * cellSize + cellSize * 0.2) + 'px';
+                    } else if (token.position >= 52) {
+                        const finishIdx = token.position - 52;
+                        if (finishIdx < FINISH_PATH[player].length) {
+                            const pos = FINISH_PATH[player][finishIdx];
+                            element.style.left = (pos.x * cellSize + cellSize * 0.2) + 'px';
+                            element.style.top = (pos.y * cellSize + cellSize * 0.2) + 'px';
+                        }
+                    }
+
+                    if (canSelectToken(player, idx)) {
+                        element.classList.add('selectable');
+                    }
+
+                    element.addEventListener('click', () => selectToken(player, idx));
+                    document.getElementById('ludoBoard').appendChild(element);
+                });
+            });
+        }
+
+        function canSelectToken(player, tokenIdx) {
+            if (!gameState.rolled || gameState.diceValue === null) return false;
+            if (player !== gameState.players[gameState.currentPlayer]) return false;
+            if (gameState.botPlayers.includes(player)) return false;
+
+            const token = gameState.tokens[player][tokenIdx];
+            if (token.finished) return false;
+
+            if (token.position === -1) {
+                return gameState.diceValue === 6;
+            }
+
+            const newPos = getNewPosition(player, token.position, gameState.diceValue);
+            return newPos !== null;
+        }
+
+        function getNewPosition(player, currentPos, steps) {
+            if (currentPos === -1) return START_POS[player];
+
+            const finishEntry = {red: 50, green: 11, yellow: 24, blue: 37}[player];
+
+            if (currentPos < finishEntry) {
+                if (currentPos + steps <= finishEntry) {
+                    return currentPos + steps;
+                } else {
+                    const stepsInFinish = currentPos + steps - finishEntry;
+                    if (stepsInFinish > 6) return null;
+                    return 52 + stepsInFinish - 1;
+                }
+            } else if (currentPos === finishEntry) {
+                if (steps <= 6) return 52 + steps - 1;
+                return null;
+            } else if (currentPos > finishEntry && currentPos < 52) {
+                const stepsToEntry = 52 - currentPos + finishEntry;
+                if (steps <= stepsToEntry) {
+                    return (currentPos + steps) % 52;
+                } else {
+                    const stepsInFinish = steps - stepsToEntry;
+                    if (stepsInFinish > 6) return null;
+                    return 52 + stepsInFinish - 1;
+                }
+            } else if (currentPos >= 52) {
+                const newFinish = currentPos + steps;
+                if (newFinish <= 57) return newFinish;
+                return null;
+            }
+
+            return null;
+        }
+
+        function selectToken(player, tokenIdx) {
+            if (!gameState.rolled || player !== gameState.players[gameState.currentPlayer]) return;
+
+            const token = gameState.tokens[player][tokenIdx];
+            const newPos = getNewPosition(player, token.position, gameState.diceValue);
+
+            if (newPos === null) return;
+
+            moveToken(player, tokenIdx, newPos);
+        }
+
+        function moveToken(player, tokenIdx, newPos) {
+            const token = gameState.tokens[player][tokenIdx];
+
+            if (newPos >= 52 && newPos <= 57) {
+                token.position = newPos;
+                token.finished = newPos === 57;
+
+                if (token.finished) {
+                    checkWin();
+                }
+            } else {
+                token.position = newPos;
+
+                if (newPos >= 0 && newPos < 52 && !SAFE_SPOTS.includes(newPos)) {
+                    PLAYERS.forEach(otherPlayer => {
+                        if (otherPlayer !== player) {
+                            gameState.tokens[otherPlayer].forEach(otherToken => {
+                                if (!otherToken.finished && otherToken.position === newPos) {
+                                    otherToken.position = -1;
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+
+            gameState.rolled = false;
+
+            if (gameState.diceValue !== 6) {
+                gameState.extraTurn = false;
+                setTimeout(() => nextTurn(), 600);
+            } else {
+                gameState.extraTurn = true;
+            }
+
+            gameState.diceValue = null;
+            renderGame();
+        }
+
+        function rollDice() {
+            if (gameState.rolled || gameState.winner) return;
+
+            const dice = document.getElementById('diceValue');
+            dice.classList.add('rolling');
+
+            setTimeout(() => {
+                gameState.diceValue = Math.floor(Math.random() * 6) + 1;
+                dice.classList.remove('rolling');
+                dice.textContent = DICE_EMOJIS[gameState.diceValue - 1];
+                gameState.rolled = true;
+
+                const player = gameState.players[gameState.currentPlayer];
+
+                if (gameState.diceValue === 6) {
+                    gameState.consecutiveSixes++;
+                    if (gameState.consecutiveSixes >= 3) {
+                        nextTurn();
+                        return;
+                    }
+                } else {
+                    gameState.consecutiveSixes = 0;
+                }
+
+                if (!canMoveAny(player, gameState.diceValue)) {
+                    if (gameState.diceValue === 6) {
+                        setTimeout(() => rollDice(), 1000);
+                    } else {
+                        nextTurn();
+                    }
+                    renderGame();
+                    return;
+                }
+
+                renderGame();
+
+                if (gameState.botPlayers.includes(player)) {
+                    setTimeout(() => botMove(), 800);
+                }
+            }, 600);
+        }
+
+        function canMoveAny(player, dice) {
+            return gameState.tokens[player].some(token => {
+                if (token.finished) return false;
+                if (token.position === -1) return dice === 6;
+                return getNewPosition(player, token.position, dice) !== null;
+            });
+        }
+
+        function botMove() {
+            const player = gameState.players[gameState.currentPlayer];
+            let bestToken = -1;
+            let bestScore = -Infinity;
+
+            gameState.tokens[player].forEach((token, idx) => {
+                if (token.finished) return;
+
+                let score = 0;
+                const newPos = getNewPosition(player, token.position, gameState.diceValue);
+
+                if (newPos === null) return;
+
+                if (newPos >= 52) {
+                    score = 1000 + newPos;
+                } else if (SAFE_SPOTS.includes(newPos)) {
+                    score = 500;
+                } else {
+                    score = newPos;
+
+                    if (gameState.botDifficulty === 'hard') {
+                        PLAYERS.forEach(otherPlayer => {
+                            if (otherPlayer !== player) {
+                                gameState.tokens[otherPlayer].forEach(otherToken => {
+                                    if (!otherToken.finished && otherToken.position === newPos) {
+                                        score += 2000;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestToken = idx;
+                }
+            });
+
+            if (bestToken !== -1) {
+                selectToken(player, bestToken);
+            } else {
+                nextTurn();
+            }
+        }
+
+        function nextTurn() {
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+            gameState.rolled = false;
+            gameState.diceValue = null;
+            gameState.extraTurn = false;
+            gameState.consecutiveSixes = 0;
+
+            renderGame();
+
+            setTimeout(() => {
+                if (gameState.botPlayers.includes(gameState.players[gameState.currentPlayer])) {
+                    setTimeout(() => rollDice(), 500);
+                }
+            }, 500);
+        }
+
+        function checkWin() {
+            const player = gameState.players[gameState.currentPlayer];
+            if (gameState.tokens[player].every(t => t.finished)) {
+                gameState.winner = player;
+                showWinner();
+            }
+        }
+
+        function showWinner() {
+            const overlay = document.getElementById('winnerOverlay');
+            const name = document.getElementById('winnerName');
+            name.textContent = gameState.winner.toUpperCase();
+            name.style.color = COLORS[gameState.winner];
+            overlay.classList.add('active');
+        }
+
+        function updateRollButton() {
+            const btn = document.getElementById('rollBtn');
+            btn.disabled = gameState.rolled && !gameState.extraTurn;
+            btn.textContent = gameState.rolled ? 'Move Token' : 'Roll Dice';
+        }
+
+        document.getElementById('rollBtn').addEventListener('click', rollDice);
+
+        document.querySelectorAll('#playerCountGroup .setup-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#playerCountGroup .setup-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                gameState.numPlayers = parseInt(btn.dataset.value);
+
+                const botSection = document.getElementById('botSection');
+                const botGroup = document.getElementById('botCountGroup');
+
+                if (gameState.numPlayers === 4) {
+                    botSection.style.display = 'none';
+                    document.getElementById('difficultySection').style.display = 'none';
+                    gameState.numBots = 0;
+                    document.getElementById('startBtn').disabled = false;
+                } else if (gameState.numPlayers === 1) {
+                    botSection.style.display = 'none';
+                    document.getElementById('difficultySection').style.display = 'block';
+                    gameState.numBots = 3;
+                    document.getElementById('startBtn').disabled = false;
+                } else {
+                    botSection.style.display = 'block';
+                    document.getElementById('difficultySection').style.display = 'block';
+
+                    botGroup.innerHTML = '';
+                    for (let i = 0; i <= 4 - gameState.numPlayers; i++) {
+                        const btn = document.createElement('button');
+                        btn.className = 'setup-btn' + (i === 0 ? ' selected' : '');
+                        btn.dataset.value = i;
+                        btn.textContent = i;
+                        btn.addEventListener('click', () => {
+                            document.querySelectorAll('#botCountGroup .setup-btn').forEach(b => b.classList.remove('selected'));
+                            btn.classList.add('selected');
+                            gameState.numBots = i;
+                        });
+                        botGroup.appendChild(btn);
+                    }
+                    gameState.numBots = 0;
+                    document.getElementById('startBtn').disabled = false;
+                }
+            });
+        });
+
+        document.querySelectorAll('#difficultyGroup .setup-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#difficultyGroup .setup-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                gameState.botDifficulty = btn.dataset.value;
+            });
+        });
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            if (gameState.numPlayers === 0) return;
+
+            gameState.players = PLAYERS.slice(0, gameState.numPlayers + gameState.numBots);
+            gameState.botPlayers = PLAYERS.slice(gameState.numPlayers, gameState.numPlayers + gameState.numBots);
+
+            document.getElementById('setupScreen').classList.remove('active');
+            document.getElementById('gameBoard').classList.add('active');
+
+            initBoard();
+            initGame();
+        });
+    </script>
+</body>
+</html>
