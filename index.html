@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Neon Music PWA</title>
+<title>YSN MUSIC PWA</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -126,8 +126,8 @@ input[type="range"]{
 
 <header class="glass p-4 flex items-center justify-between">
   <div>
-    <h1 class="text-3xl font-bold neon">Neon Music</h1>
-    <p class="text-gray-400 text-sm">Premium Music Streaming</p>
+    <h1 class="text-3xl font-bold neon">YSN MUSIC</h1>
+    <p class="text-gray-400 text-sm">Punjabi Music Streaming</p>
   </div>
 
   <button id="installBtn" class="install-btn hidden">
@@ -250,6 +250,15 @@ let currentIndex = 0;
 let deferredPrompt;
 
 const AUDIOUS_API = 'https://discoveryprovider.audius.co/v1';
+
+const featuredArtists = [
+  'Diljit Dosanjh',
+  'Parmish Verma',
+  'Karan Aujla',
+  'AP Dhillon',
+  'Sidhu Moosewala',
+  'Shubh'
+];
 
 const fallbackSongs = [
   {
@@ -552,7 +561,7 @@ installBtn.addEventListener('click',async()=>{
 
 // PWA Manifest
 const manifest = {
-  name:'Neon Music',
+  name:'YSN MUSIC',
   short_name:'NeonMusic',
   start_url:'./',
   display:'standalone',
@@ -637,7 +646,8 @@ tabs.forEach(btn=>{
   });
 });
 
-loadSongs();
+// Load Punjabi songs by default
+loadSongs('Diljit Dosanjh Karan Aujla Parmish Verma Punjabi');
 loadDownloads();
 </script>
 
