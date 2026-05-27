@@ -1,1122 +1,645 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfect Ludo</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background: #111827;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .container {
-            background: #1F2937;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-        }
-        .game-wrapper {
-            display: flex;
-            gap: 25px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .board-container {
-            background: white;
-            padding: 10px;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.4);
-        }
-        canvas {
-            display: block;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .sidebar {
-            background: #374151;
-            padding: 20px;
-            border-radius: 12px;
-            color: #F3F4F6;
-            min-width: 240px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .sidebar h2 {
-            text-align: center;
-            color: #FBBF24;
-            font-size: 1.5em;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-        .player-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .player-info {
-            padding: 12px;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.05);
-            border-left: 5px solid transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
-        }
-        .player-info.active {
-            background: rgba(255,255,255,0.15);
-            transform: scale(1.02);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .player-info .dot {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.6);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-        }
-        .player-info .details {
-            flex-grow: 1;
-        }
-        .player-info .name {
-            font-weight: 700;
-            font-size: 1em;
-        }
-        .player-info .status {
-            font-size: 0.75em;
-            color: #9CA3AF;
-            margin-top: 2px;
-        }
-        .dice-area {
-            text-align: center;
-            background: #1F2937;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #4B5563;
-        }
-        .dice {
-            display: inline-block;
-            width: 70px;
-            height: 70px;
-            background: white;
-            border-radius: 12px;
-            line-height: 70px;
-            font-size: 40px;
-            font-weight: bold;
-            color: #111827;
-            box-shadow: inset 0 -4px 0 #D1D5DB, 0 4px 10px rgba(0,0,0,0.3);
-            transition: transform 0.1s;
-        }
-        .dice.rolling {
-            animation: shake 0.4s ease-in-out infinite;
-        }
-        @keyframes shake {
-            0% { transform: rotate(0deg) scale(1); }
-            25% { transform: rotate(15deg) scale(1.1); }
-            50% { transform: rotate(0deg) scale(1); }
-            75% { transform: rotate(-15deg) scale(1.1); }
-            100% { transform: rotate(0deg) scale(1); }
-        }
-        .roll-btn {
-            width: 100%;
-            padding: 12px;
-            margin-top: 15px;
-            background: #FBBF24;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: 800;
-            color: #111827;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #D97706;
-            transition: all 0.1s;
-        }
-        .roll-btn:active:not(:disabled) {
-            transform: translateY(4px);
-            box-shadow: 0 0 0 #D97706;
-        }
-        .roll-btn:disabled {
-            background: #4B5563;
-            color: #9CA3AF;
-            box-shadow: 0 4px 0 #374151;
-            cursor: not-allowed;
-        }
-        .message {
-            background: #1F2937;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 0.9em;
-            text-align: center;
-            font-weight: 600;
-            min-height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #4B5563;
-        }
-        .winner-banner {
-            display: none;
-            padding: 12px;
-            background: #10B981;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 800;
-            color: white;
-            font-size: 1.1em;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .winner-banner.show { display: block; }
-        @keyframes popIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        @media (max-width: 850px) {
-            .game-wrapper { flex-direction: column; align-items: center; }
-            .sidebar { min-width: 100%; }
-        }
-    
-.start-menu{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.88);
-display:flex;
-justify-content:center;
-align-items:center;
-z-index:9999;
-}
-.menu-box{
-background:#1F2937;
-padding:30px;
-border-radius:20px;
-width:320px;
-color:white;
-text-align:center;
-}
-.menu-box select,.menu-box button{
-width:100%;
-padding:12px;
-margin:10px 0;
-border:none;
-border-radius:10px;
-}
-.top-controls{
-display:flex;
-gap:10px;
-margin-top:10px;
-}
-.top-controls button{
-flex:1;
-padding:10px;
-border:none;
-border-radius:8px;
-cursor:pointer;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Neon Music PWA</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<meta name="theme-color" content="#00ff99">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
 }
 
+body{
+  background:#050505;
+  color:white;
+  font-family:Arial,sans-serif;
+  overflow:hidden;
+}
+
+.glass{
+  background:rgba(255,255,255,0.06);
+  backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,0.06);
+}
+
+.neon{
+  color:#00ff99;
+}
+
+.song-card{
+  transition:0.3s;
+}
+
+.song-card:hover{
+  transform:scale(1.02);
+}
+
+.song-cover{
+  width:65px;
+  height:65px;
+  border-radius:18px;
+  object-fit:cover;
+}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  width:100%;
+  height:72px;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:100;
+}
+
+.bottom-nav button{
+  font-size:22px;
+}
+
+.mini-player{
+  position:fixed;
+  bottom:82px;
+  left:10px;
+  right:10px;
+  height:78px;
+  border-radius:26px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:10px 16px;
+  z-index:99;
+}
+
+.tab-btn{
+  padding:10px 20px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.08);
+}
+
+.active-tab{
+  background:#00ff99;
+  color:black;
+  font-weight:bold;
+}
+
+input[type="range"]{
+  accent-color:#00ff99;
+}
+
+.rotate{
+  animation:spin 12s linear infinite;
+}
+
+@keyframes spin{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+
+.scrollbar-hide::-webkit-scrollbar{
+  display:none;
+}
+
+#fullPlayer{
+  background:linear-gradient(to bottom,#111,#000);
+}
+
+.install-btn{
+  background:#00ff99;
+  color:black;
+  padding:10px 18px;
+  border-radius:999px;
+  font-weight:bold;
+}
 </style>
 </head>
 <body>
 
-<div class="start-menu" id="startMenu">
-<div class="menu-box">
-<h1>🎲 CLASSIC LUDO</h1>
+<div class="h-screen flex flex-col">
 
-<select id="playerMode">
-<option value="2">2 Players</option>
-<option value="3">3 Players</option>
-<option value="4" selected>4 Players</option>
-</select>
+<header class="glass p-4 flex items-center justify-between">
+  <div>
+    <h1 class="text-3xl font-bold neon">Neon Music</h1>
+    <p class="text-gray-400 text-sm">Premium Music Streaming</p>
+  </div>
 
-<select id="humanMode">
-<option value="1">1 Human</option>
-<option value="2">2 Humans</option>
-<option value="3">3 Humans</option>
-<option value="4">4 Humans</option>
-</select>
+  <button id="installBtn" class="install-btn hidden">
+    Install
+  </button>
+</header>
 
-<button id="startGameBtn">START GAME</button>
+<div class="p-4">
+  <input
+    id="searchInput"
+    placeholder="Search any song..."
+    class="w-full px-5 py-4 rounded-2xl glass outline-none"
+  />
 </div>
+
+<div class="px-4 flex gap-3 mb-3">
+  <button class="tab-btn active-tab" data-tab="home">
+    Home
+  </button>
+
+  <button class="tab-btn" data-tab="downloads">
+    Downloads
+  </button>
 </div>
 
-<div class="container">
-    <div class="game-wrapper">
-        <div class="board-container">
-            <canvas id="boardCanvas" width="540" height="540"></canvas>
-        </div>
-        <div class="sidebar">
-            <h2>🎲 CLASSIC LUDO</h2>
-            <div class="player-list" id="playerList"></div>
-            
-            <div class="dice-area">
-                <div class="dice" id="diceDisplay">⚀</div>
-                <button class="roll-btn" id="rollBtn">ROLL DICE</button>
-            </div>
-            
-            <div class="top-controls">
-<button id="pauseBtn">Pause</button>
-<button id="restartBtn">Restart</button>
+<div id="songList" class="flex-1 overflow-y-auto px-4 pb-40 scrollbar-hide"></div>
+
+<div id="downloadsList" class="hidden flex-1 overflow-y-auto px-4 pb-40 scrollbar-hide"></div>
+
+<div id="miniPlayer" class="mini-player glass">
+
+  <img
+    id="miniCover"
+    src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400"
+    class="w-14 h-14 rounded-xl object-cover"
+  />
+
+  <div class="flex-1 overflow-hidden">
+    <h3 id="miniTitle" class="font-bold truncate">
+      No Song Playing
+    </h3>
+
+    <p id="miniArtist" class="text-gray-400 text-sm truncate">
+      Artist
+    </p>
+  </div>
+
+  <button id="playPauseBtn" class="text-2xl">
+    ▶
+  </button>
+
 </div>
-<div class="message" id="message">Select mode to start</div>
-            <div class="winner-banner" id="winnerBanner">🏆 Player Wins!</div>
-        </div>
+
+<div id="fullPlayer" class="hidden fixed inset-0 z-50 p-6 flex flex-col">
+
+  <div class="flex items-center justify-between mb-6">
+    <button id="closePlayer" class="text-3xl">↓</button>
+    <h2 class="text-lg">Now Playing</h2>
+    <div></div>
+  </div>
+
+  <div class="flex-1 flex flex-col justify-center items-center">
+
+    <img
+      id="playerCover"
+      src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400"
+      class="w-72 h-72 rounded-3xl object-cover rotate"
+    />
+
+    <h2 id="playerTitle" class="text-3xl font-bold mt-8 text-center"></h2>
+
+    <p id="playerArtist" class="text-gray-400 mt-2"></p>
+
+    <input
+      id="seekBar"
+      type="range"
+      value="0"
+      class="w-full mt-10"
+    />
+
+    <div class="flex justify-between w-full mt-2 text-sm text-gray-400">
+      <span id="currentTime">0:00</span>
+      <span id="duration">0:00</span>
     </div>
+
+    <div class="flex items-center gap-10 mt-12 text-4xl">
+      <button id="prevBtn">⏮</button>
+      <button id="bigPlayBtn">▶</button>
+      <button id="nextBtn">⏭</button>
+    </div>
+
+  </div>
+
 </div>
+
+<nav class="bottom-nav glass">
+  <button>🏠</button>
+  <button>🔍</button>
+  <button>🎵</button>
+  <button>⬇</button>
+</nav>
+
+</div>
+
+<audio id="audio"></audio>
+
 <script>
-// ==========================================
-// REAL LUDO MECHANICS & ALIGNMENT FIX
-// ==========================================
+const audio = document.getElementById('audio');
+const songList = document.getElementById('songList');
+const downloadsList = document.getElementById('downloadsList');
+const searchInput = document.getElementById('searchInput');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const bigPlayBtn = document.getElementById('bigPlayBtn');
+const seekBar = document.getElementById('seekBar');
+const installBtn = document.getElementById('installBtn');
+const fullPlayer = document.getElementById('fullPlayer');
 
-const canvas = document.getElementById('boardCanvas');
-const ctx = canvas.getContext('2d');
-const CELL = 36; // 540 / 15
+let currentSongs = [];
+let currentIndex = 0;
+let deferredPrompt;
 
-// Colors matched to the provided image
-const COLORS = [
-    { name: 'Red',    hex: '#E3292E', outline: '#991B1F' },
-    { name: 'Green',  hex: '#009F4D', outline: '#006631' },
-    { name: 'Yellow', hex: '#FFC100', outline: '#B28700' },
-    { name: 'Blue',   hex: '#0078D7', outline: '#004F8F' }
+const AUDIOUS_API = 'https://discoveryprovider.audius.co/v1';
+
+const fallbackSongs = [
+  {
+    title:'Blinding Lights',
+    artist:'The Weeknd',
+    cover:'https://i.scdn.co/image/ab67616d0000b2730f5d6e4f0b4e4f8b0e9d0b4f',
+    stream:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+  },
+  {
+    title:'Levitating',
+    artist:'Dua Lipa',
+    cover:'https://i.scdn.co/image/ab67616d0000b273d4daf28d55fe419d5f1e0c5',
+    stream:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
+  },
+  {
+    title:'Stay',
+    artist:'Justin Bieber',
+    cover:'https://i.scdn.co/image/ab67616d0000b273d3d0f1d4d4f3d0f3d0f3d0f3',
+    stream:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+  }
 ];
-const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
 
-// Exactly 52 squares forming the main continuous outer path
-const PATH = [
-    [6,1],[6,2],[6,3],[6,4],[6,5], // Red track 
-    [5,6],[4,6],[3,6],[2,6],[1,6],[0,6], // Up track
-    [0,7],[0,8], // Top turn
-    [1,8],[2,8],[3,8],[4,8],[5,8], // Down track
-    [6,9],[6,10],[6,11],[6,12],[6,13],[6,14], // Green track
-    [7,14],[8,14], // Right turn
-    [8,13],[8,12],[8,11],[8,10],[8,9], // Yellow track
-    [9,8],[10,8],[11,8],[12,8],[13,8],[14,8], // Down track
-    [14,7],[14,6], // Bottom turn
-    [13,6],[12,6],[11,6],[10,6],[9,6], // Up track
-    [8,5],[8,4],[8,3],[8,2],[8,1],[8,0], // Blue track
-    [7,0],[6,0] // Left turn (Connects back to start)
-];
+async function loadSongs(query='top songs'){
 
-// The 5 squares leading to the center triangle for each color
-const HOME_STRETCH = {
-    0: [[7,1], [7,2], [7,3], [7,4], [7,5]],       // Red
-    1: [[1,7], [2,7], [3,7], [4,7], [5,7]],       // Green
-    2: [[7,13], [7,12], [7,11], [7,10], [7,9]],   // Yellow
-    3: [[13,7], [12,7], [11,7], [10,7], [9,7]]    // Blue
-};
+  try{
 
-// Start index in the PATH array (0-based) and safe squares
-const STAR_SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
-const START_INDEX = { 0: 0, 1: 13, 2: 26, 3: 39 };
+    // AUDIOUS PUBLIC API
+    const res = await fetch(
+      `${AUDIOUS_API}/tracks/search?query=${encodeURIComponent(query)}&app_name=NeonMusic`
+    );
 
-// Top-Left corner of bases (Red: Top-Left, Green: Top-Right, Yellow: Bottom-Right, Blue: Bottom-Left)
-const BASES = {
-    0: { r: 0, c: 0 },   
-    1: { r: 0, c: 9 },   
-    2: { r: 9, c: 9 },   
-    3: { r: 9, c: 0 }    
-};
+    const data = await res.json();
 
-let state = {
-    players: [],
-    turn: 0,
-    diceVal: 1,
-    sixCount: 0,
-    state: 'WAIT_ROLL', // WAIT_ROLL, WAIT_MOVE, ANIMATING, GAMEOVER
-    selectedPiece: null
-};
-
-// Initialize Game
-function initGame() {
-    state.players = [0, 1, 2, 3].map(id => ({
-        id,
-        color: COLORS[id],
-        // Pieces: 0 = Base, 1-52 = Path, 101-105 = Home Stretch, 106 = Reached Center
-        pieces: [0, 0, 0, 0],
-        finished: false
+    currentSongs = (data.data || []).slice(0,20).map(song=>({
+      title:song.title,
+      artist:song.user?.name || 'Unknown Artist',
+      cover:
+        song.artwork?.['480x480'] ||
+        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400',
+      stream:`${AUDIOUS_API}/tracks/${song.id}/stream?app_name=NeonMusic`
     }));
-    state.turn = 0;
-    state.sixCount = 0;
-    state.state = 'WAIT_ROLL';
-    updateUI();
-    drawBoard();
+
+    if(currentSongs.length === 0){
+      currentSongs = fallbackSongs;
+    }
+
+    renderSongs(currentSongs);
+
+  }catch(err){
+
+    console.log(err);
+
+    currentSongs = fallbackSongs;
+
+    renderSongs(currentSongs);
+  }
 }
 
-// ==========================================
-// DRAWING ENGINE (Perfect Alignments)
-// ==========================================
-function drawBoard() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Background Grid
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#E5E7EB';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 15; i++) {
-        ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, canvas.height); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(canvas.width, i * CELL); ctx.stroke();
-    }
+function renderSongs(songs){
 
-    // Draw Main Path Cells Details
-    ctx.strokeStyle = '#9CA3AF';
-    ctx.lineWidth = 1;
-    for(let i=0; i<PATH.length; i++) {
-        const [r, c] = PATH[i];
-        ctx.strokeRect(c*CELL, r*CELL, CELL, CELL);
-    }
+  songList.innerHTML='';
 
-    // Draw Bases (Updated Layout)
-    [0, 1, 2, 3].forEach(id => {
-        let {r, c} = BASES[id];
-        let color = COLORS[id].hex;
-        
-        // Big colored square
-        ctx.fillStyle = color;
-        ctx.fillRect(c*CELL, r*CELL, 6*CELL, 6*CELL);
-        
-        // Inner white square with rounded corners
-        ctx.fillStyle = '#FFFFFF';
-        if (ctx.roundRect) {
-            ctx.beginPath();
-            ctx.roundRect((c+0.75)*CELL, (r+0.75)*CELL, 4.5*CELL, 4.5*CELL, 20);
-            ctx.fill();
-        } else {
-            ctx.fillRect((c+1)*CELL, (r+1)*CELL, 4*CELL, 4*CELL);
-        }
+  songs.forEach((song,index)=>{
 
-        // Base token empty slots
-        ctx.fillStyle = '#E5E7EB';
-        const offset = [ [2, 2], [4, 2], [2, 4], [4, 4] ]; // Perfectly centered 2x2
-        offset.forEach(([dr, dc]) => {
-            ctx.beginPath();
-            ctx.arc((c + dc)*CELL, (r + dr)*CELL, CELL*0.6, 0, Math.PI*2);
-            ctx.fill();
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = '#D1D5DB';
-            ctx.stroke();
-        });
+    const card = document.createElement('div');
+
+    card.className='song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
+
+    card.innerHTML=`
+      <img src="${song.cover}" class="song-cover">
+
+      <div class="flex-1 overflow-hidden">
+        <h2 class="font-bold truncate">${song.title}</h2>
+        <p class="text-gray-400 text-sm truncate">${song.artist}</p>
+      </div>
+
+      <button
+        class="bg-green-400 text-black px-4 py-2 rounded-full font-bold"
+        onclick="event.stopPropagation();downloadSong(${index})"
+      >
+        ⬇
+      </button>
+    `;
+
+    card.addEventListener('click',()=>{
+      playSong(index);
     });
 
-    // Center Triangles (Fixed to meet perfectly in center)
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = '#4B5563';
-    let cx = 7.5*CELL, cy = 7.5*CELL;
-    
-    // Red Left
-    ctx.fillStyle = COLORS[0].hex;
-    ctx.beginPath(); ctx.moveTo(6*CELL, 6*CELL); ctx.lineTo(cx, cy); ctx.lineTo(6*CELL, 9*CELL); ctx.fill(); ctx.stroke();
-    // Green Top
-    ctx.fillStyle = COLORS[1].hex;
-    ctx.beginPath(); ctx.moveTo(6*CELL, 6*CELL); ctx.lineTo(cx, cy); ctx.lineTo(9*CELL, 6*CELL); ctx.fill(); ctx.stroke();
-    // Yellow Right
-    ctx.fillStyle = COLORS[2].hex;
-    ctx.beginPath(); ctx.moveTo(9*CELL, 6*CELL); ctx.lineTo(cx, cy); ctx.lineTo(9*CELL, 9*CELL); ctx.fill(); ctx.stroke();
-    // Blue Bottom
-    ctx.fillStyle = COLORS[3].hex;
-    ctx.beginPath(); ctx.moveTo(6*CELL, 9*CELL); ctx.lineTo(cx, cy); ctx.lineTo(9*CELL, 9*CELL); ctx.fill(); ctx.stroke();
+    songList.appendChild(card);
 
-    // Home Stretches & Starts
-    [0, 1, 2, 3].forEach(id => {
-        let color = COLORS[id].hex;
-        
-        // Home Stretches
-        HOME_STRETCH[id].forEach(([r, c]) => {
-            ctx.fillStyle = color;
-            ctx.fillRect(c*CELL, r*CELL, CELL, CELL);
-            ctx.strokeRect(c*CELL, r*CELL, CELL, CELL);
-        });
-
-        // Start Square
-        let startPos = START_INDEX[id];
-        let [sr, sc] = PATH[startPos];
-        ctx.fillStyle = color;
-        ctx.fillRect(sc*CELL, sr*CELL, CELL, CELL);
-        ctx.strokeRect(sc*CELL, sr*CELL, CELL, CELL);
-        drawArrow(sc*CELL + CELL/2, sr*CELL + CELL/2, id);
-    });
-
-    // Safe Stars (Colored based on track)
-    STAR_SAFE_SQUARES.forEach(index => {
-        if (!Object.values(START_INDEX).includes(index)) {
-            let [r, c] = PATH[index];
-            let starColor = '#6B7280';
-            if(index === 8) starColor = COLORS[0].hex;
-            if(index === 21) starColor = COLORS[1].hex;
-            if(index === 34) starColor = COLORS[2].hex;
-            if(index === 47) starColor = COLORS[3].hex;
-            drawStar(c*CELL + CELL/2, r*CELL + CELL/2, starColor);
-        }
-    });
-
-    drawTokens();
+  });
 }
 
-function drawArrow(x, y, dirId) {
-    ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath();
-    let s = 8;
-    if(dirId === 0) { ctx.moveTo(x-s, y-s); ctx.lineTo(x+s, y); ctx.lineTo(x-s, y+s); } // Right
-    if(dirId === 1) { ctx.moveTo(x-s, y-s); ctx.lineTo(x, y+s); ctx.lineTo(x+s, y-s); } // Down
-    if(dirId === 2) { ctx.moveTo(x+s, y-s); ctx.lineTo(x-s, y); ctx.lineTo(x+s, y+s); } // Left
-    if(dirId === 3) { ctx.moveTo(x-s, y+s); ctx.lineTo(x, y-s); ctx.lineTo(x+s, y+s); } // Up
-    ctx.fill();
+function playSong(index){
+
+  currentIndex = index;
+
+  const song = currentSongs[index];
+
+  audio.src = song.stream;
+
+  audio.play();
+
+  updatePlayer(song);
+
+  setupMediaSession(song);
 }
 
-function drawStar(x, y, color) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.beginPath();
-    for(let i=0; i<5; i++) {
-        ctx.lineTo(Math.cos((18+i*72)*Math.PI/180)*12, -Math.sin((18+i*72)*Math.PI/180)*12);
-        ctx.lineTo(Math.cos((54+i*72)*Math.PI/180)*5, -Math.sin((54+i*72)*Math.PI/180)*5);
-    }
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = '#374151';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
+function updatePlayer(song){
+
+  document.getElementById('miniTitle').textContent = song.title;
+  document.getElementById('miniArtist').textContent = song.artist;
+
+  document.getElementById('playerTitle').textContent = song.title;
+  document.getElementById('playerArtist').textContent = song.artist;
+
+  document.getElementById('miniCover').src = song.cover;
+  document.getElementById('playerCover').src = song.cover;
 }
 
-// Token Overlap & Drawing Logic
-function drawTokens() {
-    let boardMap = {}; 
+function togglePlay(){
 
-    state.players.forEach(p => {
-        p.pieces.forEach((pos, idx) => {
-            if (pos === 106) return; 
-            
-            let id = pos === 0 ? `B_${p.id}_${idx}` : 
-                     pos <= 52 ? `P_${pos}` : `H_${p.id}_${pos}`;
-            
-            if (!boardMap[id]) boardMap[id] = [];
-            boardMap[id].push({ player: p, pieceIdx: idx, pos });
-        });
-    });
-
-    for (let cellId in boardMap) {
-        let tokens = boardMap[cellId];
-        let num = tokens.length;
-        
-        let cx, cy;
-        let t = tokens[0];
-        if (t.pos === 0) {
-            let offset = [ [2, 2], [4, 2], [2, 4], [4, 4] ]; // Updated Base layout offset
-            cx = (BASES[t.player.id].c + offset[t.pieceIdx][1]) * CELL;
-            cy = (BASES[t.player.id].r + offset[t.pieceIdx][0]) * CELL;
-        } else if (t.pos <= 52) {
-            let [r, c] = PATH[t.pos - 1];
-            cx = c * CELL + CELL/2;
-            cy = r * CELL + CELL/2;
-        } else {
-            let stretchIdx = t.pos - 101;
-            let [r, c] = HOME_STRETCH[t.player.id][stretchIdx];
-            cx = c * CELL + CELL/2;
-            cy = r * CELL + CELL/2;
-        }
-
-        tokens.forEach((tk, index) => {
-            let ox = 0, oy = 0, scale = 1;
-            
-            if (tk.pos !== 0 && num > 1) {
-                scale = num <= 4 ? 0.7 : 0.55;
-                if (num === 2) { ox = (index===0?-6:6); }
-                else if (num === 3) { ox = index===0?-6:index===1?6:0; oy = index===2?-6:6; }
-                else if (num === 4) { ox = index%2===0?-6:6; oy = index<2?-6:6; }
-                else {
-                    let angle = (index / num) * Math.PI * 2;
-                    ox = Math.cos(angle) * 8; oy = Math.sin(angle) * 8;
-                }
-            }
-            
-            drawSingleToken(cx + ox, cy + oy, tk.player.color, scale);
-        });
-    }
+  if(audio.paused){
+    audio.play();
+  }else{
+    audio.pause();
+  }
 }
 
-// Updated Token Design (3D Dimpled Sphere)
-function drawSingleToken(x, y, colorObj, scale) {
-    let radius = 14 * scale;
-    
-    // Drop shadow
-    ctx.beginPath();
-    ctx.arc(x, y + 2, radius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fill();
+playPauseBtn.onclick = togglePlay;
+bigPlayBtn.onclick = togglePlay;
 
-    // Outer gradient rim
-    let grad = ctx.createRadialGradient(x - radius*0.3, y - radius*0.3, radius*0.1, x, y, radius);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.5, colorObj.hex);
-    grad.addColorStop(1, colorObj.outline);
-    
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Inner dark center (dimple)
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
-    ctx.fillStyle = colorObj.outline;
-    ctx.fill();
-    
-    // Inner highlight for depth
-    let innerGrad = ctx.createLinearGradient(x - radius*0.4, y - radius*0.4, x + radius*0.4, y + radius*0.4);
-    innerGrad.addColorStop(0, 'rgba(0,0,0,0.5)');
-    innerGrad.addColorStop(1, 'rgba(255,255,255,0.3)');
-    ctx.fillStyle = innerGrad;
-    ctx.fill();
+nextBtn.onclick = ()=>{
+  currentIndex = (currentIndex + 1) % currentSongs.length;
+  playSong(currentIndex);
 }
 
-// ==========================================
-// GAME LOGIC & RULES
-// ==========================================
-document.getElementById('rollBtn').addEventListener('click', rollDice);
-
-function rollDice() {
-    if (state.state !== 'WAIT_ROLL') return;
-    
-    const diceEl = document.getElementById('diceDisplay');
-    const rollBtn = document.getElementById('rollBtn');
-    diceEl.classList.add('rolling');
-    rollBtn.disabled = true;
-    state.state = 'ANIMATING';
-
-    let rolls = 0;
-    const interval = setInterval(() => {
-        diceEl.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
-        rolls++;
-        if (rolls >= 10) {
-            clearInterval(interval);
-            diceEl.classList.remove('rolling');
-            
-            const finalVal = Math.floor(Math.random() * 6) + 1;
-            state.diceVal = finalVal;
-            diceEl.textContent = DICE_FACES[finalVal - 1];
-            
-            if (finalVal === 6) {
-                state.sixCount++;
-                if (state.sixCount === 3) {
-                    setMessage("Three 6s! Turn skipped.");
-                    setTimeout(nextTurn, 1000);
-                    return;
-                }
-            } else {
-                state.sixCount = 0;
-            }
-
-            checkMoves();
-        }
-    }, 50);
+prevBtn.onclick = ()=>{
+  currentIndex = (currentIndex - 1 + currentSongs.length) % currentSongs.length;
+  playSong(currentIndex);
 }
 
-function getValidMoves(playerIdx, diceVal) {
-    let p = state.players[playerIdx];
-    let valid = [];
-    
-    p.pieces.forEach((pos, i) => {
-        if (pos === 106) return; 
-        if (pos === 0 && diceVal === 6) valid.push(i); 
-        if (pos > 0 && pos <= 52) {
-            let startP = START_INDEX[playerIdx];
-            let endP = startP === 0 ? 51 : startP - 1; 
-            
-            let dist = endP - pos;
-            if (dist < 0) dist += 52;
-            
-            if (diceVal <= dist) {
-                valid.push(i); 
-            } else {
-                let homeStepsReq = diceVal - dist;
-                if (homeStepsReq <= 6) valid.push(i); 
-            }
-        }
-        if (pos >= 101 && pos <= 105) {
-            if (pos + diceVal <= 106) valid.push(i);
-        }
-    });
-    return valid;
-}
-
-function checkMoves() {
-    let valid = getValidMoves(state.turn, state.diceVal);
-    
-    if (valid.length === 0) {
-        setMessage(`No moves possible for ${state.diceVal}.`);
-        setTimeout(() => {
-            if(state.diceVal === 6) { state.state = 'WAIT_ROLL'; updateUI(); }
-            else { nextTurn(); }
-        }, 1200);
-        return;
-    }
-    
-    if (valid.length === 1) {
-        setMessage("Auto-moving token...");
-        setTimeout(() => executeMove(state.turn, valid[0], state.diceVal), 500);
-        return;
-    }
-
-    setMessage(`Select a token to move (${state.diceVal})`);
-    state.state = 'WAIT_MOVE';
-}
-
-canvas.addEventListener('click', (e) => {
-    if (state.state !== 'WAIT_MOVE') return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const col = Math.floor(x / (rect.width / 15));
-    const row = Math.floor(y / (rect.height / 15));
-
-    let p = state.players[state.turn];
-    let valid = getValidMoves(state.turn, state.diceVal);
-    
-    for (let i of valid) {
-        let pos = p.pieces[i];
-        let pr, pc;
-        
-        if (pos === 0) {
-            let offset = [ [2, 2], [4, 2], [2, 4], [4, 4] ]; // Updated Base hit detection offset
-            pr = BASES[p.id].r + Math.floor(offset[i][0]);
-            pc = BASES[p.id].c + Math.floor(offset[i][1]);
-        } else if (pos <= 52) {
-            [pr, pc] = PATH[pos - 1];
-        } else {
-            [pr, pc] = HOME_STRETCH[p.id][pos - 101];
-        }
-        
-        if (Math.abs(pr - row) <= 1 && Math.abs(pc - col) <= 1) {
-            executeMove(state.turn, i, state.diceVal);
-            return;
-        }
-    }
+audio.addEventListener('play',()=>{
+  playPauseBtn.textContent='⏸';
+  bigPlayBtn.textContent='⏸';
 });
 
-// Added Hopping Animation Logic
-function executeMove(pId, pieceIdx, diceVal) {
-    state.state = 'ANIMATING';
-    let p = state.players[pId];
-    let oldPos = p.pieces[pieceIdx];
-    let targetPos;
-    let path = [];
+audio.addEventListener('pause',()=>{
+  playPauseBtn.textContent='▶';
+  bigPlayBtn.textContent='▶';
+});
 
-    if (oldPos === 0) {
-        targetPos = START_INDEX[pId] + 1;
-        path.push(targetPos);
-    } else if (oldPos <= 52) {
-        let startP = START_INDEX[pId];
-        let endP = startP === 0 ? 51 : startP - 1;
-        let dist = endP - oldPos;
-        if (dist < 0) dist += 52;
-        
-        if (diceVal <= dist) {
-            targetPos = oldPos + diceVal;
-            if (targetPos > 52) targetPos -= 52;
-            for(let i=1; i<=diceVal; i++) {
-                let step = oldPos + i;
-                if(step > 52) step -= 52;
-                path.push(step);
-            }
-        } else {
-            targetPos = 100 + (diceVal - dist);
-            for(let i=1; i<=dist; i++) {
-                let step = oldPos + i;
-                if(step > 52) step -= 52;
-                path.push(step);
-            }
-            for(let i=1; i<=(diceVal - dist); i++) {
-                path.push(100 + i);
-            }
-        }
-    } else {
-        targetPos = oldPos + diceVal;
-        for(let i=1; i<=diceVal; i++) {
-            path.push(oldPos + i);
-        }
-    }
+audio.addEventListener('timeupdate',()=>{
 
-    // Step-by-step animation execution
-    let step = 0;
-    let hopInterval = setInterval(() => {
-        if (step < path.length) {
-            p.pieces[pieceIdx] = path[step];
-            drawBoard();
-            step++;
-        } else {
-            clearInterval(hopInterval);
-            finalizeMove(pId, pieceIdx, diceVal, targetPos);
-        }
-    }, 120); // Speed of hops
+  seekBar.max = audio.duration || 0;
+  seekBar.value = audio.currentTime;
+
+  currentTime.textContent = formatTime(audio.currentTime);
+  duration.textContent = formatTime(audio.duration);
+});
+
+seekBar.addEventListener('input',()=>{
+  audio.currentTime = seekBar.value;
+});
+
+function formatTime(sec){
+
+  if(!sec) return '0:00';
+
+  const min = Math.floor(sec/60);
+  const secs = Math.floor(sec%60);
+
+  return `${min}:${secs.toString().padStart(2,'0')}`;
 }
 
-function finalizeMove(pId, pieceIdx, diceVal, newPos) {
-    let p = state.players[pId];
-    let turnContinues = false;
+searchInput.addEventListener('keypress',(e)=>{
 
-    // Check Captures
-    if (newPos <= 52 && !STAR_SAFE_SQUARES.includes(newPos - 1)) {
-        state.players.forEach(op => {
-            if (op.id !== pId) {
-                op.pieces.forEach((opPos, idx) => {
-                    if (opPos === newPos) {
-                        op.pieces[idx] = 0; 
-                        turnContinues = true;
-                        setMessage("Captured opponent! Extra turn!");
-                    }
-                });
-            }
-        });
-    }
+  if(e.key === 'Enter'){
+    loadSongs(searchInput.value);
+  }
+});
 
-    // Check Finished
-    if (newPos === 106) {
-        turnContinues = true;
-        setMessage("Token reached home! Extra turn!");
-        if (p.pieces.every(x => x === 106)) {
-            p.finished = true;
-            document.getElementById('winnerBanner').textContent = `🏆 ${COLORS[pId].name} Player Wins!`;
-            document.getElementById('winnerBanner').classList.add('show');
-            state.state = 'GAMEOVER';
-            drawBoard();
-            return;
-        }
-    }
-
-    drawBoard();
-
-    setTimeout(() => {
-        if (diceVal === 6) turnContinues = true;
-        
-        if (turnContinues) {
-
-            state.state = 'WAIT_ROLL';
-
-            if (
-                !document.querySelector('.message')
-                .textContent.includes("Captured") &&
-                !document.querySelector('.message')
-                .textContent.includes("home")
-            ) {
-
-                setMessage("Rolled a 6! Roll again.");
-            }
-
-            updateUI();
-
-            // FIX BOT EXTRA TURN FREEZE
-            if(
-                state.players[state.turn] &&
-                state.players[state.turn].isBot &&
-                !state.paused
-            ){
-
-                setTimeout(()=>{
-                    botTurn();
-                },900);
-            }
-
-        } else {
-
-            nextTurn();
-        }
-    }, turnContinues ? 1200 : 400);
+miniPlayer.onclick = ()=>{
+  fullPlayer.classList.remove('hidden');
 }
 
-function nextTurn() {
-    let limit = 4;
-    do {
-        state.turn = (state.turn + 1) % 4;
-        limit--;
-    } while (state.players[state.turn].finished && limit > 0);
-    
-    state.sixCount = 0;
-    state.state = 'WAIT_ROLL';
-    setMessage(`${COLORS[state.turn].name}'s turn to roll!`);
-    updateUI();
+closePlayer.onclick = ()=>{
+  fullPlayer.classList.add('hidden');
 }
 
-function updateUI() {
-    if (state.state === 'GAMEOVER') return;
-    
-    const list = document.getElementById('playerList');
-    list.innerHTML = '';
-    
-    state.players.forEach((p, i) => {
-        const div = document.createElement('div');
-        div.className = 'player-info' + (i === state.turn ? ' active' : '');
-        div.style.borderLeftColor = i === state.turn ? p.color.hex : 'transparent';
-        
-        let inBase = p.pieces.filter(x => x===0).length;
-        let finished = p.pieces.filter(x => x===106).length;
-        
-        div.innerHTML = `
-            <div class="dot" style="background: ${p.color.hex}"></div>
-            <div class="details">
-                <div class="name">${p.color.name} ${p.finished ? '🏆' : ''}</div>
-                <div class="status">Base: ${inBase} | Home: ${finished}/4</div>
-            </div>
-        `;
-        list.appendChild(div);
+async function downloadSong(index){
+
+  const song = currentSongs[index];
+
+  const cache = await caches.open('offline-music');
+
+  await cache.add(song.stream);
+
+  const downloads = JSON.parse(localStorage.getItem('downloads') || '[]');
+
+  downloads.push(song);
+
+  localStorage.setItem('downloads',JSON.stringify(downloads));
+
+  alert('Song Downloaded Offline!');
+
+  loadDownloads();
+}
+
+async function loadDownloads(){
+
+  downloadsList.innerHTML='';
+
+  const downloads = JSON.parse(localStorage.getItem('downloads') || '[]');
+
+  downloads.forEach(song=>{
+
+    const card = document.createElement('div');
+
+    card.className='song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
+
+    card.innerHTML=`
+      <img src="${song.cover}" class="song-cover">
+
+      <div class="flex-1 overflow-hidden">
+        <h2 class="font-bold truncate">${song.title}</h2>
+        <p class="text-gray-400 text-sm truncate">${song.artist}</p>
+      </div>
+    `;
+
+    card.addEventListener('click',async()=>{
+
+      const cache = await caches.open('offline-music');
+
+      const response = await cache.match(song.stream);
+
+      if(response){
+
+        const blob = await response.blob();
+
+        audio.src = URL.createObjectURL(blob);
+
+        audio.play();
+
+        updatePlayer(song);
+      }
     });
 
-    const btn = document.getElementById('rollBtn');
-    if (state.state === 'WAIT_ROLL') {
-        btn.disabled = false;
-        btn.style.background = COLORS[state.turn].hex;
-        btn.style.color = '#FFF';
-        btn.style.boxShadow = `0 4px 0 ${COLORS[state.turn].outline}`;
-    } else {
-        btn.disabled = true;
-        btn.style.background = '#4B5563';
-        btn.style.boxShadow = '0 4px 0 #374151';
-    }
+    downloadsList.appendChild(card);
+
+  });
 }
 
-function setMessage(msg) {
-    document.getElementById('message').textContent = msg;
-}
+function setupMediaSession(song){
 
-// Start
+  if('mediaSession' in navigator){
 
-
-
-// ===== CLEAN MULTIPLAYER SYSTEM =====
-
-state.paused = false;
-
-function setupPlayers(total,humans){
-
-    state.players = [];
-
-    let ids = [0,1,2,3];
-
-    if(total===2) ids=[0,1];
-    if(total===3) ids=[0,1,2];
-
-    ids.forEach((id,index)=>{
-
-        state.players.push({
-            id:id,
-            color:COLORS[id],
-            pieces:[0,0,0,0],
-            finished:false,
-            isBot:index>=humans
-        });
-
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:song.title,
+      artist:song.artist,
+      artwork:[
+        {
+          src:song.cover,
+          sizes:'512x512',
+          type:'image/png'
+        }
+      ]
     });
 
-    state.turn = 0;
-    state.state = 'WAIT_ROLL';
-    state.sixCount = 0;
-
-    updateUI();
-    drawBoard();
-
-    setMessage(`${state.players[0].color.name}'s turn`);
-
-    if(state.players[0].isBot){
-        setTimeout(botTurn,900);
-    }
-}
-
-document.getElementById('startGameBtn').onclick = function(){
-
-    let total =
-        parseInt(document.getElementById('playerMode').value);
-
-    let humans =
-        parseInt(document.getElementById('humanMode').value);
-
-    if(humans > total) humans = total;
-
-    document.getElementById('startMenu').style.display='none';
-
-    setupPlayers(total,humans);
-};
-
-document.getElementById('pauseBtn').onclick = function(){
-
-    state.paused = !state.paused;
-
-    this.innerText =
-        state.paused ? 'Resume' : 'Pause';
-};
-
-document.getElementById('restartBtn').onclick = function(){
-    location.reload();
-};
-
-const oldNextTurn = nextTurn;
-
-nextTurn = function(){
-
-    let loops = 0;
-
-    do{
-
-        state.turn++;
-
-        if(state.turn >= state.players.length){
-            state.turn = 0;
-        }
-
-        loops++;
-
-    }while(
-        state.players[state.turn].finished &&
-        loops < 10
-    );
-
-    state.sixCount = 0;
-    state.state = 'WAIT_ROLL';
-
-    updateUI();
-
-    setMessage(
-        `${state.players[state.turn].color.name}'s turn`
-    );
-
-    if(
-        state.players[state.turn].isBot &&
-        !state.paused
-    ){
-        setTimeout(botTurn,900);
-    }
-};
-
-const oldUpdateUI = updateUI;
-
-updateUI = function(){
-
-    oldUpdateUI();
-
-    const btn =
-        document.getElementById('rollBtn');
-
-    if(state.players[state.turn].isBot){
-
-        btn.disabled = true;
-        btn.innerText = 'BOT TURN';
-
-    }else if(state.state === 'WAIT_ROLL'){
-
-        btn.disabled = false;
-        btn.innerText = 'ROLL DICE';
-    }
-};
-
-function botTurn(){
-
-    if(state.paused) return;
-
-    if(state.state !== 'WAIT_ROLL') return;
-
-    rollDice();
-
-    const wait = setInterval(()=>{
-
-        if(state.state === 'WAIT_MOVE'){
-
-            clearInterval(wait);
-
-            let valid =
-                getValidMoves(
-                    state.turn,
-                    state.diceVal
-                );
-
-            if(!valid.length) return;
-
-            let best = valid[0];
-            let score = -9999;
-
-            valid.forEach(piece=>{
-
-                let s = botScore(piece);
-
-                if(s > score){
-                    score = s;
-                    best = piece;
-                }
-
-            });
-
-            setTimeout(()=>{
-                executeMove(
-                    state.turn,
-                    best,
-                    state.diceVal
-                );
-            },700);
-        }
-
-    },100);
-}
-
-function botScore(pieceIdx){
-
-    let p =
-        state.players[state.turn];
-
-    let pos =
-        p.pieces[pieceIdx];
-
-    let score = 0;
-
-    if(pos===0 && state.diceVal===6){
-        score += 500;
-    }
-
-    if(pos>=101){
-        score += 2000;
-    }
-
-    let target = pos + state.diceVal;
-
-    if(target >= 106){
-        score += 10000;
-    }
-
-    if(
-        target<=52 &&
-        STAR_SAFE_SQUARES.includes(target-1)
-    ){
-        score += 1200;
-    }
-
-    state.players.forEach(op=>{
-
-        if(op.id===p.id) return;
-
-        op.pieces.forEach(enemy=>{
-
-            if(enemy===target){
-                score += 6000;
-            }
-
-        });
-
+    navigator.mediaSession.setActionHandler('play',()=>audio.play());
+    navigator.mediaSession.setActionHandler('pause',()=>audio.pause());
+
+    navigator.mediaSession.setActionHandler('nexttrack',()=>{
+      currentIndex = (currentIndex + 1) % currentSongs.length;
+      playSong(currentIndex);
     });
 
-    score += target * 3;
-
-    return score;
+    navigator.mediaSession.setActionHandler('previoustrack',()=>{
+      currentIndex = (currentIndex - 1 + currentSongs.length) % currentSongs.length;
+      playSong(currentIndex);
+    });
+  }
 }
 
+window.addEventListener('beforeinstallprompt',(e)=>{
+
+  e.preventDefault();
+
+  deferredPrompt = e;
+
+  installBtn.classList.remove('hidden');
+});
+
+installBtn.addEventListener('click',async()=>{
+
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+  }
+});
+
+// PWA Manifest
+const manifest = {
+  name:'Neon Music',
+  short_name:'NeonMusic',
+  start_url:'./',
+  display:'standalone',
+  background_color:'#000000',
+  theme_color:'#00ff99',
+  orientation:'portrait',
+  icons:[
+    {
+      src:'https://cdn-icons-png.flaticon.com/512/727/727245.png',
+      sizes:'512x512',
+      type:'image/png'
+    }
+  ]
+};
+
+const manifestBlob = new Blob([
+  JSON.stringify(manifest)
+],{type:'application/json'});
+
+const manifestURL = URL.createObjectURL(manifestBlob);
+
+document.querySelector('link[rel="manifest"]')?.remove();
+
+const manifestLink = document.createElement('link');
+manifestLink.rel='manifest';
+manifestLink.href=manifestURL;
+document.head.appendChild(manifestLink);
+
+// SERVICE WORKER
+if('serviceWorker' in navigator){
+
+  const swCode = `
+    const CACHE = 'neon-music-v1';
+
+    self.addEventListener('install',event=>{
+      event.waitUntil(
+        caches.open(CACHE).then(cache=>{
+          return cache.addAll(['./']);
+        })
+      );
+    });
+
+    self.addEventListener('fetch',event=>{
+      event.respondWith(
+        caches.match(event.request).then(response=>{
+          return response || fetch(event.request);
+        })
+      );
+    });
+  `;
+
+  const blob = new Blob([swCode],{
+    type:'application/javascript'
+  });
+
+  const swURL = URL.createObjectURL(blob);
+
+  navigator.serviceWorker.register(swURL);
+}
+
+// TABS
+const tabs = document.querySelectorAll('.tab-btn');
+
+tabs.forEach(btn=>{
+
+  btn.addEventListener('click',()=>{
+
+    tabs.forEach(b=>b.classList.remove('active-tab'));
+
+    btn.classList.add('active-tab');
+
+    if(btn.dataset.tab === 'downloads'){
+
+      songList.classList.add('hidden');
+      downloadsList.classList.remove('hidden');
+
+    }else{
+
+      songList.classList.remove('hidden');
+      downloadsList.classList.add('hidden');
+    }
+  });
+});
+
+loadSongs();
+loadDownloads();
 </script>
+
 </body>
 </html>
