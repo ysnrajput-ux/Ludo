@@ -3,1078 +3,809 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classic Ludo Game</title>
+    <title>Perfect Ludo</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
-            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            background: #111827;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: Arial, sans-serif;
-            padding: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
         .container {
-            display: flex;
-            gap: 30px;
-            align-items: flex-start;
-            justify-content: center;
-            flex-wrap: wrap;
-            max-width: 1100px;
-        }
-
-        .setup-screen {
-            background: white;
-            border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            max-width: 450px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-section {
-            display: none;
-        }
-
-        .game-section.active {
-            display: flex;
-            gap: 30px;
-            align-items: flex-start;
-        }
-
-        .setup-screen h1 {
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2rem;
-        }
-
-        .setup-section {
-            margin-bottom: 25px;
-            text-align: center;
-        }
-
-        .setup-section label {
-            display: block;
-            color: #333;
-            font-weight: bold;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-
-        .button-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .setup-btn {
-            padding: 10px 20px;
-            border: 2px solid #ddd;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .setup-btn:hover {
-            border-color: #999;
-            background: #f5f5f5;
-        }
-
-        .setup-btn.selected {
-            background: #4CAF50;
-            color: white;
-            border-color: #4CAF50;
-        }
-
-        .start-btn {
-            width: 100%;
-            padding: 14px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 20px;
-            transition: all 0.3s;
-        }
-
-        .start-btn:hover:not(:disabled) {
-            background: #45a049;
-        }
-
-        .start-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .board-wrapper {
-            position: relative;
-            width: 550px;
-            height: 550px;
-            background: white;
-            border: 6px solid #000;
-            display: grid;
-            grid-template-columns: repeat(15, 1fr);
-            grid-template-rows: repeat(15, 1fr);
-            gap: 0;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        }
-
-        .cell {
-            border: 1px solid #888;
-            position: relative;
-        }
-
-        .home-red {
-            grid-column: 1 / 6;
-            grid-row: 1 / 6;
-            background: #d32f2f;
-            border: 3px solid #000;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 8px;
-            padding: 8px;
-        }
-
-        .home-green {
-            grid-column: 11 / 16;
-            grid-row: 1 / 6;
-            background: #388e3c;
-            border: 3px solid #000;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 8px;
-            padding: 8px;
-        }
-
-        .home-yellow {
-            grid-column: 11 / 16;
-            grid-row: 11 / 16;
-            background: #fbc02d;
-            border: 3px solid #000;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 8px;
-            padding: 8px;
-        }
-
-        .home-blue {
-            grid-column: 1 / 6;
-            grid-row: 11 / 16;
-            background: #1976d2;
-            border: 3px solid #000;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 8px;
-            padding: 8px;
-        }
-
-        .home-slot {
-            background: white;
-            border-radius: 50%;
-            border: 2px solid #000;
-            cursor: pointer;
-            position: relative;
-            z-index: 5;
-        }
-
-        .token {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px solid #000;
-            cursor: pointer;
-            z-index: 20;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0;
-            font-weight: bold;
-            color: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset -1px -1px 2px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.2);
-        }
-
-        .token.red {
-            background: radial-gradient(circle at 35% 35%, #ff5555, #cc0000);
-        }
-
-        .token.green {
-            background: radial-gradient(circle at 35% 35%, #66bb6a, #2e7d32);
-        }
-
-        .token.yellow {
-            background: radial-gradient(circle at 35% 35%, #ffeb3b, #f57f17);
-        }
-
-        .token.blue {
-            background: radial-gradient(circle at 35% 35%, #42a5f5, #1565c0);
-        }
-
-        .token.selectable {
-            animation: tokenPulse 1.5s infinite;
-            box-shadow: 0 0 20px rgba(255,255,255,0.8), 0 2px 8px rgba(0,0,0,0.4);
-        }
-
-        @keyframes tokenPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-        }
-
-        .control-panel {
-            background: white;
-            border-radius: 15px;
+            background: #1F2937;
             padding: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            width: 280px;
-            min-height: 450px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .game-wrapper {
+            display: flex;
+            gap: 25px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .board-container {
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        }
+        canvas {
+            display: block;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .sidebar {
+            background: #374151;
+            padding: 20px;
+            border-radius: 12px;
+            color: #F3F4F6;
+            min-width: 240px;
             display: flex;
             flex-direction: column;
+            gap: 15px;
         }
-
-        .player-turn {
+        .sidebar h2 {
             text-align: center;
+            color: #FBBF24;
+            font-size: 1.5em;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .player-info {
             padding: 12px;
             border-radius: 8px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            color: white;
-            font-size: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-left: 5px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
         }
-
-        .player-turn.red { background: #d32f2f; }
-        .player-turn.green { background: #388e3c; }
-        .player-turn.yellow { background: #fbc02d; color: #000; }
-        .player-turn.blue { background: #1976d2; }
-
-        .dice-display {
+        .player-info.active {
+            background: rgba(255,255,255,0.15);
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .player-info .dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.6);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .player-info .details {
+            flex-grow: 1;
+        }
+        .player-info .name {
+            font-weight: 700;
+            font-size: 1em;
+        }
+        .player-info .status {
+            font-size: 0.75em;
+            color: #9CA3AF;
+            margin-top: 2px;
+        }
+        .dice-area {
             text-align: center;
-            margin-bottom: 15px;
+            background: #1F2937;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #4B5563;
         }
-
         .dice {
-            font-size: 50px;
-            padding: 10px 15px;
-            background: white;
-            border: 3px solid #000;
-            border-radius: 8px;
             display: inline-block;
-            min-width: 70px;
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 12px;
+            line-height: 70px;
+            font-size: 40px;
+            font-weight: bold;
+            color: #111827;
+            box-shadow: inset 0 -4px 0 #D1D5DB, 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
         }
-
         .dice.rolling {
-            animation: rollDice 0.5s;
+            animation: shake 0.4s ease-in-out infinite;
         }
-
-        @keyframes rollDice {
-            0% { transform: rotateX(0deg); }
-            50% { transform: rotateX(360deg); }
-            100% { transform: rotateX(720deg); }
+        @keyframes shake {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(15deg) scale(1.1); }
+            50% { transform: rotate(0deg) scale(1); }
+            75% { transform: rotate(-15deg) scale(1.1); }
+            100% { transform: rotate(0deg) scale(1); }
         }
-
         .roll-btn {
             width: 100%;
             padding: 12px;
-            background: #d32f2f;
-            color: white;
+            margin-top: 15px;
+            background: #FBBF24;
             border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 800;
+            color: #111827;
             cursor: pointer;
-            margin-bottom: 12px;
-            transition: all 0.3s;
+            box-shadow: 0 4px 0 #D97706;
+            transition: all 0.1s;
         }
-
-        .roll-btn:hover:not(:disabled) {
-            background: #b71c1c;
+        .roll-btn:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #D97706;
         }
-
         .roll-btn:disabled {
-            background: #999;
+            background: #4B5563;
+            color: #9CA3AF;
+            box-shadow: 0 4px 0 #374151;
             cursor: not-allowed;
         }
-
-        .info-text {
+        .message {
+            background: #1F2937;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
             text-align: center;
-            padding: 10px;
-            background: #f5f5f5;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            min-height: 40px;
-            margin-bottom: 12px;
-        }
-
-        .players-status {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 12px;
-        }
-
-        .player-item {
+            font-weight: 600;
+            min-height: 45px;
             display: flex;
-            align-items: center;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 6px;
-            font-weight: bold;
-            color: white;
-            font-size: 0.9rem;
-        }
-
-        .player-item.red { background: #d32f2f; }
-        .player-item.green { background: #388e3c; }
-        .player-item.yellow { background: #fbc02d; color: #000; }
-        .player-item.blue { background: #1976d2; }
-
-        .player-item span:last-child {
-            margin-left: auto;
-        }
-
-        .new-game-btn {
-            width: 100%;
-            padding: 10px;
-            background: #333;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .new-game-btn:hover {
-            background: #555;
-        }
-
-        .winner-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: none;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            border: 1px solid #4B5563;
         }
-
-        .winner-screen.active {
-            display: flex;
-        }
-
-        .winner-box {
-            background: white;
-            padding: 50px 40px;
-            border-radius: 15px;
+        .winner-banner {
+            display: none;
+            padding: 12px;
+            background: #10B981;
+            border-radius: 8px;
             text-align: center;
-            border: 4px solid #000;
-            animation: winnerAnimate 0.5s ease-out;
-        }
-
-        @keyframes winnerAnimate {
-            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
-            100% { transform: scale(1) rotate(0); opacity: 1; }
-        }
-
-        .winner-box h2 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-
-        .winner-box p {
-            font-size: 1.2rem;
-            color: #666;
-            margin-bottom: 25px;
-        }
-
-        .winner-box button {
-            padding: 12px 30px;
-            background: #4CAF50;
+            font-weight: 800;
             color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
+            font-size: 1.1em;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        .winner-box button:hover {
-            background: #45a049;
+        .winner-banner.show { display: block; }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
-
-        @media (max-width: 800px) {
-            .container {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .control-panel {
-                width: 100%;
-                max-width: 300px;
-            }
-
-            .board-wrapper {
-                width: 90vw;
-                height: 90vw;
-                max-width: 500px;
-                max-height: 500px;
-            }
+        @media (max-width: 850px) {
+            .game-wrapper { flex-direction: column; align-items: center; }
+            .sidebar { min-width: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="setup-screen" id="setup">
-            <h1>🎲 LUDO</h1>
-
-            <div class="setup-section">
-                <label>Number of Players</label>
-                <div class="button-row" id="playerCountButtons">
-                    <button class="setup-btn" data-value="1">1</button>
-                    <button class="setup-btn" data-value="2">2</button>
-                    <button class="setup-btn" data-value="3">3</button>
-                    <button class="setup-btn" data-value="4">4</button>
-                </div>
-            </div>
-
-            <div class="setup-section" id="botCountSection" style="display:none;">
-                <label>Add Bots</label>
-                <div class="button-row" id="botCountButtons"></div>
-            </div>
-
-            <div class="setup-section" id="difficultySection" style="display:none;">
-                <label>Bot Difficulty</label>
-                <div class="button-row" id="difficultyButtons">
-                    <button class="setup-btn" data-value="easy">Easy</button>
-                    <button class="setup-btn selected" data-value="medium">Medium</button>
-                    <button class="setup-btn" data-value="hard">Hard</button>
-                </div>
-            </div>
-
-            <button class="start-btn" id="startBtn" disabled>Start Game</button>
+<div class="container">
+    <div class="game-wrapper">
+        <div class="board-container">
+            <canvas id="boardCanvas" width="540" height="540"></canvas>
         </div>
-
-        <div class="game-section" id="gameSection">
-            <div class="board-wrapper" id="board">
-                <div class="home-red" id="homeRed"></div>
-                <div class="home-green" id="homeGreen"></div>
-                <div class="home-yellow" id="homeYellow"></div>
-                <div class="home-blue" id="homeBlue"></div>
+        <div class="sidebar">
+            <h2>🎲 CLASSIC LUDO</h2>
+            <div class="player-list" id="playerList"></div>
+            
+            <div class="dice-area">
+                <div class="dice" id="diceDisplay">⚀</div>
+                <button class="roll-btn" id="rollBtn">ROLL DICE</button>
             </div>
-
-            <div class="control-panel">
-                <div class="player-turn" id="playerTurn">Red's Turn</div>
-                <div class="dice-display">
-                    <div class="dice" id="dice">🎲</div>
-                </div>
-                <button class="roll-btn" id="rollBtn">Roll Dice</button>
-                <div class="info-text" id="infoText">Roll the dice!</div>
-                <div class="players-status" id="playersList"></div>
-                <button class="new-game-btn" onclick="location.reload()">New Game</button>
-            </div>
+            
+            <div class="message" id="message">Red's turn to roll!</div>
+            <div class="winner-banner" id="winnerBanner">🏆 Player Wins!</div>
         </div>
     </div>
+</div>
+<script>
+// ==========================================
+// REAL LUDO MECHANICS & ALIGNMENT FIX
+// ==========================================
 
-    <div class="winner-screen" id="winnerScreen">
-        <div class="winner-box">
-            <h2 id="winnerName">RED</h2>
-            <p>WINS! 🎉</p>
-            <button onclick="location.reload()">Play Again</button>
-        </div>
-    </div>
+const canvas = document.getElementById('boardCanvas');
+const ctx = canvas.getContext('2d');
+const CELL = 36; // 540 / 15
 
-    <script>
-        const COLORS = {
-            red: { main: '#d32f2f', light: '#ffcccc' },
-            green: { main: '#388e3c', light: '#ccffcc' },
-            yellow: { main: '#fbc02d', light: '#ffffcc' },
-            blue: { main: '#1976d2', light: '#ccccff' }
-        };
+// Colors matched to the provided image
+const COLORS = [
+    { name: 'Red',    hex: '#E3292E', outline: '#991B1F' },
+    { name: 'Green',  hex: '#009F4D', outline: '#006631' },
+    { name: 'Yellow', hex: '#FFC100', outline: '#B28700' },
+    { name: 'Blue',   hex: '#0078D7', outline: '#004F8F' }
+];
+const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
 
-        const PLAYERS = ['red', 'green', 'yellow', 'blue'];
-        const DICE_EMOJIS = ['⚁', '⚂', '⚃', '⚄', '⚅', '⚀'];
-        const SAFE_SPOTS = [0, 8, 13, 21, 26, 34, 39, 47];
+// Exactly 52 squares forming the main continuous outer path
+const PATH = [
+    [6,1],[6,2],[6,3],[6,4],[6,5], // Red track 
+    [5,6],[4,6],[3,6],[2,6],[1,6],[0,6], // Up track
+    [0,7],[0,8], // Top turn
+    [1,8],[2,8],[3,8],[4,8],[5,8], // Down track
+    [6,9],[6,10],[6,11],[6,12],[6,13],[6,14], // Green track
+    [7,14],[8,14], // Right turn
+    [8,13],[8,12],[8,11],[8,10],[8,9], // Yellow track
+    [9,8],[10,8],[11,8],[12,8],[13,8],[14,8], // Down track
+    [14,7],[14,6], // Bottom turn
+    [13,6],[12,6],[11,6],[10,6],[9,6], // Up track
+    [8,5],[8,4],[8,3],[8,2],[8,1],[8,0], // Blue track
+    [7,0],[6,0] // Left turn (Connects back to start)
+];
 
-        // Board path layout (clockwise, 52 positions)
-        const BOARD_PATH = [
-            // Red entry (0-6)
-            {x: 6, y: 1}, {x: 6, y: 2}, {x: 6, y: 3}, {x: 6, y: 4}, {x: 6, y: 5},
-            {x: 5, y: 6}, {x: 4, y: 6},
-            // Red turns up (7-12)
-            {x: 3, y: 6}, {x: 2, y: 6}, {x: 1, y: 6}, {x: 0, y: 6}, {x: 0, y: 7}, {x: 0, y: 8},
-            // Green entry (13-19)
-            {x: 1, y: 8}, {x: 2, y: 8}, {x: 3, y: 8}, {x: 4, y: 8}, {x: 5, y: 8},
-            {x: 6, y: 9}, {x: 6, y: 10},
-            // Green turns right (20-25)
-            {x: 6, y: 11}, {x: 6, y: 12}, {x: 6, y: 13}, {x: 6, y: 14}, {x: 7, y: 14}, {x: 8, y: 14},
-            // Yellow entry (26-32)
-            {x: 8, y: 13}, {x: 8, y: 12}, {x: 8, y: 11}, {x: 8, y: 10}, {x: 8, y: 9},
-            {x: 9, y: 8}, {x: 10, y: 8},
-            // Yellow turns down (33-38)
-            {x: 11, y: 8}, {x: 12, y: 8}, {x: 13, y: 8}, {x: 14, y: 8}, {x: 14, y: 7}, {x: 14, y: 6},
-            // Blue entry (39-45)
-            {x: 13, y: 6}, {x: 12, y: 6}, {x: 11, y: 6}, {x: 10, y: 6}, {x: 9, y: 6},
-            {x: 8, y: 5}, {x: 8, y: 4},
-            // Blue turns left (46-51)
-            {x: 8, y: 3}, {x: 8, y: 2}, {x: 8, y: 1}, {x: 8, y: 0}, {x: 7, y: 0}
-        ];
+// The 5 squares leading to the center triangle for each color
+const HOME_STRETCH = {
+    0: [[7,1], [7,2], [7,3], [7,4], [7,5]],       // Red
+    1: [[1,7], [2,7], [3,7], [4,7], [5,7]],       // Green
+    2: [[7,13], [7,12], [7,11], [7,10], [7,9]],   // Yellow
+    3: [[13,7], [12,7], [11,7], [10,7], [9,7]]    // Blue
+};
 
-        // Home finish paths
-        const FINISH_PATHS = {
-            red: [{x: 7, y: 2}, {x: 7, y: 3}, {x: 7, y: 4}, {x: 7, y: 5}, {x: 7, y: 6}, {x: 7, y: 7}],
-            green: [{x: 2, y: 7}, {x: 3, y: 7}, {x: 4, y: 7}, {x: 5, y: 7}, {x: 6, y: 7}, {x: 7, y: 7}],
-            yellow: [{x: 7, y: 12}, {x: 7, y: 11}, {x: 7, y: 10}, {x: 7, y: 9}, {x: 7, y: 8}, {x: 7, y: 7}],
-            blue: [{x: 12, y: 7}, {x: 11, y: 7}, {x: 10, y: 7}, {x: 9, y: 7}, {x: 8, y: 7}, {x: 7, y: 7}]
-        };
+// Start index in the PATH array (0-based) and safe squares
+const STAR_SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
+const START_INDEX = { 0: 0, 1: 13, 2: 26, 3: 39 };
 
-        // Entry points to finish lane
-        const ENTRY_POINTS = {
-            red: 50,
-            green: 11,
-            yellow: 24,
-            blue: 37
-        };
+// Top-Left corner of bases (Red: Top-Left, Green: Top-Right, Yellow: Bottom-Right, Blue: Bottom-Left)
+const BASES = {
+    0: { r: 0, c: 0 },   
+    1: { r: 0, c: 9 },   
+    2: { r: 9, c: 9 },   
+    3: { r: 9, c: 0 }    
+};
 
-        // Start positions on main board
-        const START_POSITIONS = {
-            red: 0,
-            green: 13,
-            yellow: 26,
-            blue: 39
-        };
+let state = {
+    players: [],
+    turn: 0,
+    diceVal: 1,
+    sixCount: 0,
+    state: 'WAIT_ROLL', // WAIT_ROLL, WAIT_MOVE, ANIMATING, GAMEOVER
+    selectedPiece: null
+};
 
-        let gameState = {
-            players: [],
-            currentPlayer: 0,
-            tokens: {},
-            diceValue: null,
-            rolled: false,
-            extraTurn: false,
-            consecutiveSixes: 0,
-            winner: null,
-            botPlayers: [],
-            botDifficulty: 'medium',
-            gameActive: false
-        };
+// Initialize Game
+function initGame() {
+    state.players = [0, 1, 2, 3].map(id => ({
+        id,
+        color: COLORS[id],
+        // Pieces: 0 = Base, 1-52 = Path, 101-105 = Home Stretch, 106 = Reached Center
+        pieces: [0, 0, 0, 0],
+        finished: false
+    }));
+    state.turn = 0;
+    state.sixCount = 0;
+    state.state = 'WAIT_ROLL';
+    updateUI();
+    drawBoard();
+}
 
-        function initializeBoard() {
-            const board = document.getElementById('board');
+// ==========================================
+// DRAWING ENGINE (Perfect Alignments)
+// ==========================================
+function drawBoard() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Background Grid
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#E5E7EB';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 15; i++) {
+        ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(canvas.width, i * CELL); ctx.stroke();
+    }
 
-            // Clear existing cells
-            const existingCells = board.querySelectorAll('.cell');
-            existingCells.forEach(cell => cell.remove());
+    // Draw Main Path Cells Details
+    ctx.strokeStyle = '#9CA3AF';
+    ctx.lineWidth = 1;
+    for(let i=0; i<PATH.length; i++) {
+        const [r, c] = PATH[i];
+        ctx.strokeRect(c*CELL, r*CELL, CELL, CELL);
+    }
 
-            // Create board cells
-            for (let row = 0; row < 15; row++) {
-                for (let col = 0; col < 15; col++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
+    // Draw Bases (Updated Layout)
+    [0, 1, 2, 3].forEach(id => {
+        let {r, c} = BASES[id];
+        let color = COLORS[id].hex;
+        
+        // Big colored square
+        ctx.fillStyle = color;
+        ctx.fillRect(c*CELL, r*CELL, 6*CELL, 6*CELL);
+        
+        // Inner white square with rounded corners
+        ctx.fillStyle = '#FFFFFF';
+        if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect((c+0.75)*CELL, (r+0.75)*CELL, 4.5*CELL, 4.5*CELL, 20);
+            ctx.fill();
+        } else {
+            ctx.fillRect((c+1)*CELL, (r+1)*CELL, 4*CELL, 4*CELL);
+        }
 
-                    // Color cells based on board design
-                    let bgColor = 'white';
+        // Base token empty slots
+        ctx.fillStyle = '#E5E7EB';
+        const offset = [ [2, 2], [4, 2], [2, 4], [4, 4] ]; // Perfectly centered 2x2
+        offset.forEach(([dr, dc]) => {
+            ctx.beginPath();
+            ctx.arc((c + dc)*CELL, (r + dr)*CELL, CELL*0.6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#D1D5DB';
+            ctx.stroke();
+        });
+    });
 
-                    if (row < 5 && col < 5) bgColor = COLORS.red.main;
-                    else if (row < 5 && col > 9) bgColor = COLORS.green.main;
-                    else if (row > 9 && col > 9) bgColor = COLORS.yellow.main;
-                    else if (row > 9 && col < 5) bgColor = COLORS.blue.main;
-                    // Center finish area
-                    else if (row >= 6 && row <= 8 && col >= 6 && col <= 8) {
-                        if (row === 7 && col === 7) {
-                            bgColor = 'conic-gradient(from 45deg, #d32f2f 0deg, #d32f2f 90deg, #388e3c 90deg, #388e3c 180deg, #fbc02d 180deg, #fbc02d 270deg, #1976d2 270deg)';
-                        } else {
-                            bgColor = 'white';
-                        }
-                    }
-                    // Colored entry paths
-                    else if (row === 7 && col >= 1 && col <= 5) bgColor = COLORS.red.light;
-                    else if (col === 7 && row >= 1 && row <= 5) bgColor = COLORS.green.light;
-                    else if (row === 7 && col >= 9 && col <= 13) bgColor = COLORS.yellow.light;
-                    else if (col === 7 && row >= 9 && row <= 13) bgColor = COLORS.blue.light;
-                    // Safe spots
-                    else if ((row === 2 && col === 6) || (row === 6 && col === 2) ||
-                             (row === 2 && col === 8) || (row === 6 && col === 12) ||
-                             (row === 8 && col === 12) || (row === 12 && col === 8) ||
-                             (row === 12 && col === 6) || (row === 8 && col === 2)) {
-                        bgColor = '#f0f0f0';
-                    }
+    // Center Triangles (Fixed to meet perfectly in center)
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#4B5563';
+    let cx = 7.5*CELL, cy = 7.5*CELL;
+    
+    // Red Left
+    ctx.fillStyle = COLORS[0].hex;
+    ctx.beginPath(); ctx.moveTo(6*CELL, 6*CELL); ctx.lineTo(cx, cy); ctx.lineTo(6*CELL, 9*CELL); ctx.fill(); ctx.stroke();
+    // Green Top
+    ctx.fillStyle = COLORS[1].hex;
+    ctx.beginPath(); ctx.moveTo(6*CELL, 6*CELL); ctx.lineTo(cx, cy); ctx.lineTo(9*CELL, 6*CELL); ctx.fill(); ctx.stroke();
+    // Yellow Right
+    ctx.fillStyle = COLORS[2].hex;
+    ctx.beginPath(); ctx.moveTo(9*CELL, 6*CELL); ctx.lineTo(cx, cy); ctx.lineTo(9*CELL, 9*CELL); ctx.fill(); ctx.stroke();
+    // Blue Bottom
+    ctx.fillStyle = COLORS[3].hex;
+    ctx.beginPath(); ctx.moveTo(6*CELL, 9*CELL); ctx.lineTo(cx, cy); ctx.lineTo(9*CELL, 9*CELL); ctx.fill(); ctx.stroke();
 
-                    if (bgColor.includes('gradient')) {
-                        cell.style.background = bgColor;
-                    } else {
-                        cell.style.backgroundColor = bgColor;
-                    }
+    // Home Stretches & Starts
+    [0, 1, 2, 3].forEach(id => {
+        let color = COLORS[id].hex;
+        
+        // Home Stretches
+        HOME_STRETCH[id].forEach(([r, c]) => {
+            ctx.fillStyle = color;
+            ctx.fillRect(c*CELL, r*CELL, CELL, CELL);
+            ctx.strokeRect(c*CELL, r*CELL, CELL, CELL);
+        });
 
-                    board.appendChild(cell);
+        // Start Square
+        let startPos = START_INDEX[id];
+        let [sr, sc] = PATH[startPos];
+        ctx.fillStyle = color;
+        ctx.fillRect(sc*CELL, sr*CELL, CELL, CELL);
+        ctx.strokeRect(sc*CELL, sr*CELL, CELL, CELL);
+        drawArrow(sc*CELL + CELL/2, sr*CELL + CELL/2, id);
+    });
+
+    // Safe Stars (Colored based on track)
+    STAR_SAFE_SQUARES.forEach(index => {
+        if (!Object.values(START_INDEX).includes(index)) {
+            let [r, c] = PATH[index];
+            let starColor = '#6B7280';
+            if(index === 8) starColor = COLORS[0].hex;
+            if(index === 21) starColor = COLORS[1].hex;
+            if(index === 34) starColor = COLORS[2].hex;
+            if(index === 47) starColor = COLORS[3].hex;
+            drawStar(c*CELL + CELL/2, r*CELL + CELL/2, starColor);
+        }
+    });
+
+    drawTokens();
+}
+
+function drawArrow(x, y, dirId) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    let s = 8;
+    if(dirId === 0) { ctx.moveTo(x-s, y-s); ctx.lineTo(x+s, y); ctx.lineTo(x-s, y+s); } // Right
+    if(dirId === 1) { ctx.moveTo(x-s, y-s); ctx.lineTo(x, y+s); ctx.lineTo(x+s, y-s); } // Down
+    if(dirId === 2) { ctx.moveTo(x+s, y-s); ctx.lineTo(x-s, y); ctx.lineTo(x+s, y+s); } // Left
+    if(dirId === 3) { ctx.moveTo(x-s, y+s); ctx.lineTo(x, y-s); ctx.lineTo(x+s, y+s); } // Up
+    ctx.fill();
+}
+
+function drawStar(x, y, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.beginPath();
+    for(let i=0; i<5; i++) {
+        ctx.lineTo(Math.cos((18+i*72)*Math.PI/180)*12, -Math.sin((18+i*72)*Math.PI/180)*12);
+        ctx.lineTo(Math.cos((54+i*72)*Math.PI/180)*5, -Math.sin((54+i*72)*Math.PI/180)*5);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+}
+
+// Token Overlap & Drawing Logic
+function drawTokens() {
+    let boardMap = {}; 
+
+    state.players.forEach(p => {
+        p.pieces.forEach((pos, idx) => {
+            if (pos === 106) return; 
+            
+            let id = pos === 0 ? `B_${p.id}_${idx}` : 
+                     pos <= 52 ? `P_${pos}` : `H_${p.id}_${pos}`;
+            
+            if (!boardMap[id]) boardMap[id] = [];
+            boardMap[id].push({ player: p, pieceIdx: idx, pos });
+        });
+    });
+
+    for (let cellId in boardMap) {
+        let tokens = boardMap[cellId];
+        let num = tokens.length;
+        
+        let cx, cy;
+        let t = tokens[0];
+        if (t.pos === 0) {
+            let offset = [ [2, 2], [4, 2], [2, 4], [4, 4] ]; // Updated Base layout offset
+            cx = (BASES[t.player.id].c + offset[t.pieceIdx][1]) * CELL;
+            cy = (BASES[t.player.id].r + offset[t.pieceIdx][0]) * CELL;
+        } else if (t.pos <= 52) {
+            let [r, c] = PATH[t.pos - 1];
+            cx = c * CELL + CELL/2;
+            cy = r * CELL + CELL/2;
+        } else {
+            let stretchIdx = t.pos - 101;
+            let [r, c] = HOME_STRETCH[t.player.id][stretchIdx];
+            cx = c * CELL + CELL/2;
+            cy = r * CELL + CELL/2;
+        }
+
+        tokens.forEach((tk, index) => {
+            let ox = 0, oy = 0, scale = 1;
+            
+            if (tk.pos !== 0 && num > 1) {
+                scale = num <= 4 ? 0.7 : 0.55;
+                if (num === 2) { ox = (index===0?-6:6); }
+                else if (num === 3) { ox = index===0?-6:index===1?6:0; oy = index===2?-6:6; }
+                else if (num === 4) { ox = index%2===0?-6:6; oy = index<2?-6:6; }
+                else {
+                    let angle = (index / num) * Math.PI * 2;
+                    ox = Math.cos(angle) * 8; oy = Math.sin(angle) * 8;
                 }
             }
+            
+            drawSingleToken(cx + ox, cy + oy, tk.player.color, scale);
+        });
+    }
+}
 
-            // Initialize home areas
-            initializeHomes();
-        }
+// Updated Token Design (3D Dimpled Sphere)
+function drawSingleToken(x, y, colorObj, scale) {
+    let radius = 14 * scale;
+    
+    // Drop shadow
+    ctx.beginPath();
+    ctx.arc(x, y + 2, radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
 
-        function initializeHomes() {
-            PLAYERS.forEach(player => {
-                const home = document.getElementById('home' + player.charAt(0).toUpperCase() + player.slice(1));
-                home.innerHTML = '';
+    // Outer gradient rim
+    let grad = ctx.createRadialGradient(x - radius*0.3, y - radius*0.3, radius*0.1, x, y, radius);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.5, colorObj.hex);
+    grad.addColorStop(1, colorObj.outline);
+    
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
 
-                for (let i = 0; i < 4; i++) {
-                    const slot = document.createElement('div');
-                    slot.className = 'home-slot';
-                    slot.dataset.player = player;
-                    slot.dataset.token = i;
-                    home.appendChild(slot);
-                }
-            });
-        }
+    // Inner dark center (dimple)
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
+    ctx.fillStyle = colorObj.outline;
+    ctx.fill();
+    
+    // Inner highlight for depth
+    let innerGrad = ctx.createLinearGradient(x - radius*0.4, y - radius*0.4, x + radius*0.4, y + radius*0.4);
+    innerGrad.addColorStop(0, 'rgba(0,0,0,0.5)');
+    innerGrad.addColorStop(1, 'rgba(255,255,255,0.3)');
+    ctx.fillStyle = innerGrad;
+    ctx.fill();
+}
 
-        function setupGame(numPlayers, numBots, difficulty) {
-            gameState.players = PLAYERS.slice(0, numPlayers + numBots);
-            gameState.botPlayers = PLAYERS.slice(numPlayers, numPlayers + numBots);
-            gameState.botDifficulty = difficulty;
-            gameState.gameActive = true;
+// ==========================================
+// GAME LOGIC & RULES
+// ==========================================
+document.getElementById('rollBtn').addEventListener('click', rollDice);
 
-            PLAYERS.forEach(color => {
-                gameState.tokens[color] = [];
-                for (let i = 0; i < 4; i++) {
-                    gameState.tokens[color].push({
-                        id: i,
-                        position: -1,
-                        finished: false
-                    });
-                }
-            });
+function rollDice() {
+    if (state.state !== 'WAIT_ROLL') return;
+    
+    const diceEl = document.getElementById('diceDisplay');
+    const rollBtn = document.getElementById('rollBtn');
+    diceEl.classList.add('rolling');
+    rollBtn.disabled = true;
+    state.state = 'ANIMATING';
 
-            gameState.currentPlayer = 0;
-            gameState.rolled = false;
-            gameState.diceValue = null;
-            gameState.extraTurn = false;
-            gameState.consecutiveSixes = 0;
-            gameState.winner = null;
-
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('gameSection').classList.add('active');
-
-            initializeBoard();
-            updateDisplay();
-
-            if (gameState.botPlayers.includes(gameState.players[0])) {
-                setTimeout(() => rollDice(), 500);
-            }
-        }
-
-        function updateDisplay() {
-            const player = gameState.players[gameState.currentPlayer];
-            document.getElementById('playerTurn').className = 'player-turn ' + player;
-            document.getElementById('playerTurn').textContent = player.charAt(0).toUpperCase() + player.slice(1) + "'s Turn";
-
-            updatePlayersList();
-            renderTokens();
-            updateRollButton();
-        }
-
-        function updatePlayersList() {
-            const list = document.getElementById('playersList');
-            list.innerHTML = '';
-
-            gameState.players.forEach(player => {
-                const finishedCount = gameState.tokens[player].filter(t => t.finished).length;
-                const item = document.createElement('div');
-                item.className = 'player-item ' + player;
-                item.innerHTML = `<span>${player.toUpperCase()}</span><span>${finishedCount}/4</span>`;
-                list.appendChild(item);
-            });
-        }
-
-        function renderTokens() {
-            document.querySelectorAll('.token').forEach(t => t.remove());
-
-            const boardElement = document.getElementById('board');
-            const boardRect = boardElement.getBoundingClientRect();
-            const cellSize = boardRect.width / 15;
-
-            PLAYERS.forEach(color => {
-                gameState.tokens[color].forEach((token, idx) => {
-                    if (token.finished) return;
-
-                    const tokenEl = document.createElement('div');
-                    tokenEl.className = 'token ' + color;
-                    tokenEl.dataset.player = color;
-                    tokenEl.dataset.token = idx;
-
-                    let pos = { x: 0, y: 0 };
-                    let inHome = false;
-
-                    if (token.position === -1) {
-                        // In home
-                        const slots = document.querySelectorAll(`.home-slot[data-player="${color}"][data-token="${idx}"]`);
-                        if (slots.length > 0) {
-                            const slotRect = slots[0].getBoundingClientRect();
-                            tokenEl.style.left = (slotRect.left - boardRect.left + slotRect.width / 2 - 16) + 'px';
-                            tokenEl.style.top = (slotRect.top - boardRect.top + slotRect.height / 2 - 16) + 'px';
-                            inHome = true;
-                        }
-                    } else if (token.position < 52) {
-                        // On main path
-                        pos = BOARD_PATH[token.position];
-                        tokenEl.style.left = (pos.x * cellSize + cellSize * 0.2) + 'px';
-                        tokenEl.style.top = (pos.y * cellSize + cellSize * 0.2) + 'px';
-                    } else if (token.position >= 52 && token.position <= 57) {
-                        // On finish path
-                        const finishIdx = token.position - 52;
-                        pos = FINISH_PATHS[color][finishIdx];
-                        tokenEl.style.left = (pos.x * cellSize + cellSize * 0.2) + 'px';
-                        tokenEl.style.top = (pos.y * cellSize + cellSize * 0.2) + 'px';
-                    }
-
-                    if (canSelectToken(color, token)) {
-                        tokenEl.classList.add('selectable');
-                    }
-
-                    tokenEl.addEventListener('click', () => moveTokenAction(color, idx));
-                    boardElement.appendChild(tokenEl);
-                });
-            });
-        }
-
-        function canSelectToken(color, token) {
-            if (!gameState.rolled || gameState.diceValue === null) return false;
-            if (color !== gameState.players[gameState.currentPlayer]) return false;
-            if (gameState.botPlayers.includes(color)) return false;
-            if (token.finished) return false;
-
-            // Token opens only on rolling 6
-            if (token.position === -1) {
-                return gameState.diceValue === 6;
-            }
-
-            const newPos = calculateNewPosition(color, token.position, gameState.diceValue);
-            return newPos !== null;
-        }
-
-        function calculateNewPosition(color, currentPos, steps) {
-            if (currentPos === -1) {
-                return steps === 6 ? START_POSITIONS[color] : null;
-            }
-
-            const entryPoint = ENTRY_POINTS[color];
-
-            // Handle movement on main path and transition to finish
-            if (currentPos < 52) {
-                // Calculate steps until entry point
-                let stepsToEntry = 0;
-                if (currentPos <= entryPoint) {
-                    stepsToEntry = entryPoint - currentPos;
-                } else {
-                    stepsToEntry = (52 - currentPos) + entryPoint;
-                }
-
-                if (steps <= stepsToEntry) {
-                    // Stay on main path
-                    return (currentPos + steps) % 52;
-                } else {
-                    // Move to finish path
-                    const stepsInFinish = steps - stepsToEntry;
-                    if (stepsInFinish > 6) return null;
-                    return 52 + stepsInFinish - 1;
-                }
-            } else if (currentPos >= 52 && currentPos < 58) {
-                // On finish path
-                const newPos = currentPos + steps;
-                if (newPos > 57) return null;
-                return newPos;
-            }
-
-            return null;
-        }
-
-        function moveTokenAction(color, tokenIdx) {
-            if (!gameState.rolled || gameState.diceValue === null) return;
-            if (color !== gameState.players[gameState.currentPlayer]) return;
-            if (gameState.botPlayers.includes(color)) return;
-
-            const token = gameState.tokens[color][tokenIdx];
-            if (token.finished) return;
-
-            // Token opens only on rolling 6
-            if (token.position === -1 && gameState.diceValue !== 6) return;
-
-            const newPos = calculateNewPosition(color, token.position, gameState.diceValue);
-            if (newPos === null) return;
-
-            moveToken(color, tokenIdx, newPos);
-        }
-
-        function moveToken(color, tokenIdx, newPos) {
-            const token = gameState.tokens[color][tokenIdx];
-            token.position = newPos;
-
-            // Check if finished
-            if (newPos === 57) {
-                token.finished = true;
-                checkWin();
-            } else if (newPos < 52 && !SAFE_SPOTS.includes(newPos)) {
-                // Kill enemy tokens
-                PLAYERS.forEach(otherColor => {
-                    if (otherColor !== color) {
-                        gameState.tokens[otherColor].forEach(otherToken => {
-                            if (!otherToken.finished && otherToken.position === newPos) {
-                                otherToken.position = -1;
-                            }
-                        });
-                    }
-                });
-            }
-
-            gameState.rolled = false;
-
-            if (gameState.diceValue !== 6) {
-                gameState.extraTurn = false;
-                setTimeout(() => endTurn(), 500);
-            } else {
-                gameState.extraTurn = true;
-                updateDisplay();
-            }
-
-            gameState.diceValue = null;
-            updateDisplay();
-        }
-
-        function rollDice() {
-            if (gameState.rolled || gameState.winner) return;
-
-            const dice = document.getElementById('dice');
-            dice.classList.add('rolling');
-
-            setTimeout(() => {
-                gameState.diceValue = Math.floor(Math.random() * 6) + 1;
-                dice.classList.remove('rolling');
-                dice.textContent = DICE_EMOJIS[gameState.diceValue - 1];
-                gameState.rolled = true;
-
-                const player = gameState.players[gameState.currentPlayer];
-
-                // Check for three consecutive 6s
-                if (gameState.diceValue === 6) {
-                    gameState.consecutiveSixes++;
-                    if (gameState.consecutiveSixes >= 3) {
-                        document.getElementById('infoText').textContent = 'Three 6s! Turn lost.';
-                        setTimeout(() => endTurn(), 1500);
-                        return;
-                    }
-                } else {
-                    gameState.consecutiveSixes = 0;
-                }
-
-                // Check if player can move
-                if (!canMoveAny(player)) {
-                    if (gameState.diceValue === 6) {
-                        document.getElementById('infoText').textContent = 'Rolled 6 but no moves. Rolling again...';
-                        gameState.rolled = false;
-                        setTimeout(() => rollDice(), 1000);
-                    } else {
-                        document.getElementById('infoText').textContent = 'No valid moves. Skipping turn...';
-                        setTimeout(() => endTurn(), 1000);
-                    }
+    let rolls = 0;
+    const interval = setInterval(() => {
+        diceEl.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
+        rolls++;
+        if (rolls >= 10) {
+            clearInterval(interval);
+            diceEl.classList.remove('rolling');
+            
+            const finalVal = Math.floor(Math.random() * 6) + 1;
+            state.diceVal = finalVal;
+            diceEl.textContent = DICE_FACES[finalVal - 1];
+            
+            if (finalVal === 6) {
+                state.sixCount++;
+                if (state.sixCount === 3) {
+                    setMessage("Three 6s! Turn skipped.");
+                    setTimeout(nextTurn, 1000);
                     return;
                 }
-
-                updateDisplay();
-
-                if (gameState.botPlayers.includes(player)) {
-                    setTimeout(() => botMove(), 800);
-                }
-            }, 600);
-        }
-
-        function canMoveAny(color) {
-            return gameState.tokens[color].some(token => {
-                if (token.finished) return false;
-                if (token.position === -1) return gameState.diceValue === 6;
-                return calculateNewPosition(color, token.position, gameState.diceValue) !== null;
-            });
-        }
-
-        function botMove() {
-            const color = gameState.players[gameState.currentPlayer];
-            let bestToken = -1;
-            let bestScore = -Infinity;
-
-            gameState.tokens[color].forEach((token, idx) => {
-                if (token.finished) return;
-
-                let score = 0;
-                const newPos = calculateNewPosition(color, token.position, gameState.diceValue);
-                if (newPos === null) return;
-
-                // Prioritize finishing
-                if (newPos === 57) {
-                    score = 10000;
-                } else if (newPos >= 52) {
-                    score = 5000 + newPos;
-                } else if (SAFE_SPOTS.includes(newPos)) {
-                    score = 500;
-                } else {
-                    score = newPos;
-
-                    // Hard difficulty: try to kill
-                    if (gameState.botDifficulty === 'hard') {
-                        PLAYERS.forEach(otherColor => {
-                            if (otherColor !== color) {
-                                gameState.tokens[otherColor].forEach(otherToken => {
-                                    if (!otherToken.finished && otherToken.position === newPos) {
-                                        score += 2000;
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestToken = idx;
-                }
-            });
-
-            if (bestToken !== -1) {
-                const newPos = calculateNewPosition(color, gameState.tokens[color][bestToken].position, gameState.diceValue);
-                moveToken(color, bestToken, newPos);
             } else {
-                endTurn();
+                state.sixCount = 0;
+            }
+
+            checkMoves();
+        }
+    }, 50);
+}
+
+function getValidMoves(playerIdx, diceVal) {
+    let p = state.players[playerIdx];
+    let valid = [];
+    
+    p.pieces.forEach((pos, i) => {
+        if (pos === 106) return; 
+        if (pos === 0 && diceVal === 6) valid.push(i); 
+        if (pos > 0 && pos <= 52) {
+            let startP = START_INDEX[playerIdx];
+            let endP = startP === 0 ? 51 : startP - 1; 
+            
+            let dist = endP - pos;
+            if (dist < 0) dist += 52;
+            
+            if (diceVal <= dist) {
+                valid.push(i); 
+            } else {
+                let homeStepsReq = diceVal - dist;
+                if (homeStepsReq <= 6) valid.push(i); 
             }
         }
+        if (pos >= 101 && pos <= 105) {
+            if (pos + diceVal <= 106) valid.push(i);
+        }
+    });
+    return valid;
+}
 
-        function endTurn() {
-            gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
-            gameState.rolled = false;
-            gameState.diceValue = null;
-            gameState.extraTurn = false;
-            gameState.consecutiveSixes = 0;
+function checkMoves() {
+    let valid = getValidMoves(state.turn, state.diceVal);
+    
+    if (valid.length === 0) {
+        setMessage(`No moves possible for ${state.diceVal}.`);
+        setTimeout(() => {
+            if(state.diceVal === 6) { state.state = 'WAIT_ROLL'; updateUI(); }
+            else { nextTurn(); }
+        }, 1200);
+        return;
+    }
+    
+    if (valid.length === 1) {
+        setMessage("Auto-moving token...");
+        setTimeout(() => executeMove(state.turn, valid[0], state.diceVal), 500);
+        return;
+    }
 
-            document.getElementById('dice').textContent = '🎲';
-            document.getElementById('infoText').textContent = 'Roll the dice!';
+    setMessage(`Select a token to move (${state.diceVal})`);
+    state.state = 'WAIT_MOVE';
+}
 
-            updateDisplay();
+canvas.addEventListener('click', (e) => {
+    if (state.state !== 'WAIT_MOVE') return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const col = Math.floor(x / (rect.width / 15));
+    const row = Math.floor(y / (rect.height / 15));
 
-            if (gameState.botPlayers.includes(gameState.players[gameState.currentPlayer])) {
-                setTimeout(() => rollDice(), 500);
+    let p = state.players[state.turn];
+    let valid = getValidMoves(state.turn, state.diceVal);
+    
+    for (let i of valid) {
+        let pos = p.pieces[i];
+        let pr, pc;
+        
+        if (pos === 0) {
+            let offset = [ [2, 2], [4, 2], [2, 4], [4, 4] ]; // Updated Base hit detection offset
+            pr = BASES[p.id].r + Math.floor(offset[i][0]);
+            pc = BASES[p.id].c + Math.floor(offset[i][1]);
+        } else if (pos <= 52) {
+            [pr, pc] = PATH[pos - 1];
+        } else {
+            [pr, pc] = HOME_STRETCH[p.id][pos - 101];
+        }
+        
+        if (Math.abs(pr - row) <= 1 && Math.abs(pc - col) <= 1) {
+            executeMove(state.turn, i, state.diceVal);
+            return;
+        }
+    }
+});
+
+// Added Hopping Animation Logic
+function executeMove(pId, pieceIdx, diceVal) {
+    state.state = 'ANIMATING';
+    let p = state.players[pId];
+    let oldPos = p.pieces[pieceIdx];
+    let targetPos;
+    let path = [];
+
+    if (oldPos === 0) {
+        targetPos = START_INDEX[pId] + 1;
+        path.push(targetPos);
+    } else if (oldPos <= 52) {
+        let startP = START_INDEX[pId];
+        let endP = startP === 0 ? 51 : startP - 1;
+        let dist = endP - oldPos;
+        if (dist < 0) dist += 52;
+        
+        if (diceVal <= dist) {
+            targetPos = oldPos + diceVal;
+            if (targetPos > 52) targetPos -= 52;
+            for(let i=1; i<=diceVal; i++) {
+                let step = oldPos + i;
+                if(step > 52) step -= 52;
+                path.push(step);
+            }
+        } else {
+            targetPos = 100 + (diceVal - dist);
+            for(let i=1; i<=dist; i++) {
+                let step = oldPos + i;
+                if(step > 52) step -= 52;
+                path.push(step);
+            }
+            for(let i=1; i<=(diceVal - dist); i++) {
+                path.push(100 + i);
             }
         }
-
-        function checkWin() {
-            const player = gameState.players[gameState.currentPlayer];
-            if (gameState.tokens[player].every(t => t.finished)) {
-                gameState.winner = player;
-                document.getElementById('winnerName').textContent = player.toUpperCase();
-                document.getElementById('winnerName').style.color = COLORS[player].main;
-                document.getElementById('winnerScreen').classList.add('active');
-            }
+    } else {
+        targetPos = oldPos + diceVal;
+        for(let i=1; i<=diceVal; i++) {
+            path.push(oldPos + i);
         }
+    }
 
-        function updateRollButton() {
-            const btn = document.getElementById('rollBtn');
-            btn.disabled = gameState.rolled && !gameState.extraTurn;
-            btn.textContent = gameState.rolled ? 'Move Token' : 'Roll Dice';
+    // Step-by-step animation execution
+    let step = 0;
+    let hopInterval = setInterval(() => {
+        if (step < path.length) {
+            p.pieces[pieceIdx] = path[step];
+            drawBoard();
+            step++;
+        } else {
+            clearInterval(hopInterval);
+            finalizeMove(pId, pieceIdx, diceVal, targetPos);
         }
+    }, 120); // Speed of hops
+}
 
-        // Setup event listeners
-        document.getElementById('rollBtn').addEventListener('click', rollDice);
+function finalizeMove(pId, pieceIdx, diceVal, newPos) {
+    let p = state.players[pId];
+    let turnContinues = false;
 
-        document.querySelectorAll('#playerCountButtons .setup-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#playerCountButtons .setup-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-
-                const numPlayers = parseInt(btn.dataset.value);
-                const botSection = document.getElementById('botCountSection');
-                const difficultySection = document.getElementById('difficultySection');
-
-                if (numPlayers === 4) {
-                    botSection.style.display = 'none';
-                    difficultySection.style.display = 'none';
-                    document.getElementById('startBtn').disabled = false;
-                } else if (numPlayers === 1) {
-                    botSection.style.display = 'none';
-                    difficultySection.style.display = 'block';
-                    document.getElementById('startBtn').disabled = false;
-                } else {
-                    botSection.style.display = 'block';
-                    difficultySection.style.display = 'block';
-
-                    const botButtons = document.getElementById('botCountButtons');
-                    botButtons.innerHTML = '';
-
-                    for (let i = 0; i <= 4 - numPlayers; i++) {
-                        const botBtn = document.createElement('button');
-                        botBtn.className = 'setup-btn' + (i === 0 ? ' selected' : '');
-                        botBtn.dataset.value = i;
-                        botBtn.textContent = i;
-
-                        botBtn.addEventListener('click', () => {
-                            document.querySelectorAll('#botCountButtons .setup-btn').forEach(b => b.classList.remove('selected'));
-                            botBtn.classList.add('selected');
-                        });
-
-                        botButtons.appendChild(botBtn);
+    // Check Captures
+    if (newPos <= 52 && !STAR_SAFE_SQUARES.includes(newPos - 1)) {
+        state.players.forEach(op => {
+            if (op.id !== pId) {
+                op.pieces.forEach((opPos, idx) => {
+                    if (opPos === newPos) {
+                        op.pieces[idx] = 0; 
+                        turnContinues = true;
+                        setMessage("Captured opponent! Extra turn!");
                     }
-
-                    document.getElementById('startBtn').disabled = false;
-                }
-            });
-        });
-
-        document.querySelectorAll('#difficultyButtons .setup-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#difficultyButtons .setup-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-            });
-        });
-
-        document.getElementById('startBtn').addEventListener('click', () => {
-            const selectedPlayers = document.querySelector('#playerCountButtons .setup-btn.selected');
-            if (!selectedPlayers) return;
-
-            let numPlayers = parseInt(selectedPlayers.dataset.value);
-            let numBots = 0;
-
-            if (numPlayers < 4) {
-                const selectedBots = document.querySelector('#botCountButtons .setup-btn.selected');
-                if (selectedBots) {
-                    numBots = parseInt(selectedBots.dataset.value);
-                } else if (numPlayers === 1) {
-                    numBots = 3;
-                }
+                });
             }
-
-            const selectedDifficulty = document.querySelector('#difficultyButtons .setup-btn.selected');
-            const difficulty = selectedDifficulty ? selectedDifficulty.dataset.value : 'medium';
-
-            setupGame(numPlayers, numBots, difficulty);
         });
+    }
 
-        // Show setup on page load
-        document.getElementById('setup').style.display = 'flex';
-    </script>
+    // Check Finished
+    if (newPos === 106) {
+        turnContinues = true;
+        setMessage("Token reached home! Extra turn!");
+        if (p.pieces.every(x => x === 106)) {
+            p.finished = true;
+            document.getElementById('winnerBanner').textContent = `🏆 ${COLORS[pId].name} Player Wins!`;
+            document.getElementById('winnerBanner').classList.add('show');
+            state.state = 'GAMEOVER';
+            drawBoard();
+            return;
+        }
+    }
+
+    drawBoard();
+
+    setTimeout(() => {
+        if (diceVal === 6) turnContinues = true;
+        
+        if (turnContinues) {
+            state.state = 'WAIT_ROLL';
+            if (!document.querySelector('.message').textContent.includes("Captured") && !document.querySelector('.message').textContent.includes("home")) {
+                setMessage("Rolled a 6! Roll again.");
+            }
+            updateUI();
+        } else {
+            nextTurn();
+        }
+    }, turnContinues ? 1200 : 400);
+}
+
+function nextTurn() {
+    let limit = 4;
+    do {
+        state.turn = (state.turn + 1) % 4;
+        limit--;
+    } while (state.players[state.turn].finished && limit > 0);
+    
+    state.sixCount = 0;
+    state.state = 'WAIT_ROLL';
+    setMessage(`${COLORS[state.turn].name}'s turn to roll!`);
+    updateUI();
+}
+
+function updateUI() {
+    if (state.state === 'GAMEOVER') return;
+    
+    const list = document.getElementById('playerList');
+    list.innerHTML = '';
+    
+    state.players.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'player-info' + (i === state.turn ? ' active' : '');
+        div.style.borderLeftColor = i === state.turn ? p.color.hex : 'transparent';
+        
+        let inBase = p.pieces.filter(x => x===0).length;
+        let finished = p.pieces.filter(x => x===106).length;
+        
+        div.innerHTML = `
+            <div class="dot" style="background: ${p.color.hex}"></div>
+            <div class="details">
+                <div class="name">${p.color.name} ${p.finished ? '🏆' : ''}</div>
+                <div class="status">Base: ${inBase} | Home: ${finished}/4</div>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+
+    const btn = document.getElementById('rollBtn');
+    if (state.state === 'WAIT_ROLL') {
+        btn.disabled = false;
+        btn.style.background = COLORS[state.turn].hex;
+        btn.style.color = '#FFF';
+        btn.style.boxShadow = `0 4px 0 ${COLORS[state.turn].outline}`;
+    } else {
+        btn.disabled = true;
+        btn.style.background = '#4B5563';
+        btn.style.boxShadow = '0 4px 0 #374151';
+    }
+}
+
+function setMessage(msg) {
+    document.getElementById('message').textContent = msg;
+}
+
+// Start
+initGame();
+
+</script>
 </body>
 </html>
