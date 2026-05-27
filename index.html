@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfect Ludo</title>
+    <title>Perfect Ludo - By Justhoneyy</title>
     <style>
         * {
             margin: 0;
@@ -222,6 +222,202 @@ padding:10px;
 border:none;
 border-radius:8px;
 cursor:pointer;
+}
+
+
+/* ===== PERFECT RESPONSIVE ALIGNMENT ===== */
+
+html,body{
+width:100%;
+overflow-x:hidden;
+}
+
+body{
+padding:8px;
+}
+
+.container{
+width:100%;
+max-width:1400px;
+margin:auto;
+}
+
+.game-wrapper{
+width:100%;
+display:flex;
+justify-content:center;
+align-items:flex-start;
+gap:20px;
+flex-wrap:wrap;
+}
+
+.board-container{
+display:flex;
+justify-content:center;
+align-items:center;
+padding:10px;
+max-width:100%;
+overflow:hidden;
+}
+
+canvas{
+max-width:100%;
+height:auto;
+display:block;
+}
+
+.sidebar{
+flex:1;
+min-width:260px;
+max-width:340px;
+}
+
+@media (max-width: 1100px){
+
+.game-wrapper{
+flex-direction:column;
+align-items:center;
+}
+
+.sidebar{
+width:100%;
+max-width:540px;
+}
+
+}
+
+@media (max-width: 768px){
+
+body{
+padding:4px;
+}
+
+.container{
+width:100%;
+}
+
+.board-container{
+padding:4px;
+width:100%;
+}
+
+canvas{
+width:96vw !important;
+height:96vw !important;
+max-width:540px;
+max-height:540px;
+}
+
+.sidebar{
+width:96vw;
+max-width:540px;
+padding:14px;
+}
+
+.player-info{
+padding:10px;
+}
+
+.roll-btn,
+.top-controls button{
+padding:12px;
+font-size:15px;
+}
+
+.dice{
+width:64px !important;
+height:64px !important;
+line-height:64px !important;
+font-size:34px !important;
+margin:auto;
+}
+
+.message{
+font-size:14px;
+min-height:42px;
+}
+
+}
+
+@media (max-width: 480px){
+
+canvas{
+width:98vw !important;
+height:98vw !important;
+}
+
+.sidebar{
+width:98vw;
+border-radius:12px;
+}
+
+.container{
+padding:0;
+}
+
+.board-container{
+padding:2px;
+}
+
+}
+
+
+/* WATERMARKS */
+body::before{
+content:"By Justhoneyy";
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%) rotate(-30deg);
+font-size:5vw;
+font-weight:900;
+color:rgba(255,255,255,0.035);
+pointer-events:none;
+z-index:1;
+white-space:nowrap;
+}
+
+.container::after{
+content:"By Justhoneyy";
+position:absolute;
+bottom:10px;
+right:20px;
+font-size:12px;
+font-weight:bold;
+color:rgba(255,255,255,0.18);
+pointer-events:none;
+}
+
+.board-container::before{
+content:"By Justhoneyy";
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%) rotate(-35deg);
+font-size:28px;
+font-weight:900;
+color:rgba(0,0,0,0.06);
+pointer-events:none;
+z-index:2;
+}
+
+.sidebar::after{
+content:"By Justhoneyy";
+position:absolute;
+bottom:8px;
+left:50%;
+transform:translateX(-50%);
+font-size:11px;
+letter-spacing:2px;
+color:rgba(255,255,255,0.18);
+pointer-events:none;
+}
+
+.container,
+.board-container,
+.sidebar{
+position:relative;
+overflow:hidden;
 }
 
 </style>
