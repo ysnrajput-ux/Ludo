@@ -39,6 +39,8 @@ body{
 
 .song-card:hover{
   transform:scale(1.02);
+  background:rgba(255,255,255,0.09);
+  box-shadow:0 0 25px rgba(0,255,153,0.12);
 }
 
 .song-cover{
@@ -53,11 +55,14 @@ body{
   bottom:0;
   left:0;
   width:100%;
-  height:72px;
+  height:82px;
   display:flex;
   justify-content:space-around;
   align-items:center;
   z-index:100;
+  background:rgba(20,20,20,0.75);
+  backdrop-filter:blur(20px);
+  border-top:1px solid rgba(255,255,255,0.08);
 }
 
 .bottom-nav button{
@@ -224,10 +229,25 @@ input[type="range"]{
 </div>
 
 <nav class="bottom-nav glass">
-  <button>🏠</button>
-  <button>🔍</button>
-  <button>🎵</button>
-  <button>⬇</button>
+  <button onclick="showHome()" class="flex flex-col items-center text-sm text-white/90 hover:text-green-400 transition">
+    <span class="text-2xl">🏠</span>
+    Home
+  </button>
+
+  <button onclick="focusSearch()" class="flex flex-col items-center text-sm text-white/90 hover:text-green-400 transition">
+    <span class="text-2xl">🔍</span>
+    Search
+  </button>
+
+  <button onclick="openPlaylist()" class="flex flex-col items-center text-sm text-white/90 hover:text-green-400 transition">
+    <span class="text-2xl">🎵</span>
+    Playlist
+  </button>
+
+  <button onclick="openDownloads()" class="flex flex-col items-center text-sm text-white/90 hover:text-green-400 transition">
+    <span class="text-2xl">⬇️</span>
+    Offline
+  </button>
 </nav>
 
 </div>
@@ -517,6 +537,84 @@ async function downloadSong(index){
 
   loadDownloads();
 
+function showHome(){
+  songList.classList.remove('hidden');
+  downloadsList.classList.add('hidden');
+}
+
+function openDownloads(){
+  songList.classList.add('hidden');
+  downloadsList.classList.remove('hidden');
+}
+
+function focusSearch(){
+  searchInput.focus();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function openPlaylist(){
+
+  const playlist = JSON.parse(
+    localStorage.getItem('ysn_playlists') || '[]'
+  );
+
+  if(playlist.length === 0){
+    alert('No songs added to playlist yet ❤️');
+    return;
+  }
+
+  downloadsList.innerHTML='';
+
+  playlist.forEach((song,index)=>{
+
+    const card=document.createElement('div');
+
+    card.className='song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
+
+    card.innerHTML=`
+      <img src="${song.cover}" class="song-cover">
+
+      <div class="flex-1 overflow-hidden">
+        <h2 class="font-bold truncate">${song.title}</h2>
+        <p class="text-gray-400 text-sm truncate">${song.artist}</p>
+      </div>
+
+      <button class="bg-red-500 px-4 py-2 rounded-full">
+        ❤️
+      </button>
+    `;
+
+    card.addEventListener('click',()=>{
+      audio.src=song.stream;
+      audio.play();
+      updatePlayer(song);
+    });
+
+    downloadsList.appendChild(card);
+  });
+
+  songList.classList.add('hidden');
+  downloadsList.classList.remove('hidden');
+}
+
+async function addToPlaylist(index){
+
+  const song=currentSongs[index];
+
+  let playlist=JSON.parse(
+    localStorage.getItem('ysn_playlists') || '[]'
+  );
+
+  playlist.push(song);
+
+  localStorage.setItem(
+    'ysn_playlists',
+    JSON.stringify(playlist)
+  );
+
+  alert('Added To Playlist ❤️');
+}
+
 function addToPlaylist(index){
 
   const song = currentSongs[index];
@@ -711,7 +809,7 @@ tabs.forEach(btn=>{
 });
 
 // Default Trending Music Feed
-loadSongs('Trending Global Hits Punjabi Bollywood English');
+loadSongs('Trending songs Drake Taylor Swift Diljit Dosanjh Arijit Singh AP Dhillon Karan Aujla Bollywood Punjabi English');
 loadDownloads();
 </script>
 
