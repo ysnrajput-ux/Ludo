@@ -250,6 +250,7 @@ let currentIndex = 0;
 let deferredPrompt;
 
 const AUDIOUS_API = 'https://discoveryprovider.audius.co/v1';
+const ITUNES_API = 'https://itunes.apple.com/search';
 
 const featuredArtists = [
   'Diljit Dosanjh',
@@ -281,25 +282,55 @@ const fallbackSongs = [
   }
 ];
 
-async function loadSongs(query='top songs'){
+async function loadSongs(query='Punjabi songs'){
 
   try{
 
-    // AUDIOUS PUBLIC API
-    const res = await fetch(
-      `${AUDIOUS_API}/tracks/search?query=${encodeURIComponent(query)}&app_name=NeonMusic`
+    // Try Audius API first
+    const audiusRes = await fetch(
+      `${AUDIOUS_API}/tracks/search?query=${encodeURIComponent(query)}&app_name=YSNMUSIC`
     );
 
-    const data = await res.json();
+    const audiusData = await audiusRes.json();
 
-    currentSongs = (data.data || []).slice(0,20).map(song=>({
-      title:song.title,
-      artist:song.user?.name || 'Unknown Artist',
+    let audiusSongs = (audiusData.data || []).map(song => ({
+      title: song.title,
+      artist: song.user?.name || 'Unknown Artist',
       cover:
         song.artwork?.['480x480'] ||
         'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400',
-      stream:`${AUDIOUS_API}/tracks/${song.id}/stream?app_name=NeonMusic`
+      stream: `${AUDIOUS_API}/tracks/${song.id}/stream?app_name=YSNMUSIC`
     }));
+
+    // iTunes Punjabi songs backup
+    const itunesRes = await fetch(
+      `${ITUNES_API}?term=${encodeURIComponent(query)}&media=music&limit=50`
+    );
+
+    const itunesData = await itunesRes.json();
+
+    let itunesSongs = (itunesData.results || [])
+      .filter(song => song.previewUrl)
+      .map(song => ({
+        title: song.trackName,
+        artist: song.artistName,
+        cover: song.artworkUrl100?.replace('100x100','600x600'),
+        stream: song.previewUrl
+      }));
+
+    // Merge all songs
+    currentSongs = [...audiusSongs, ...itunesSongs];
+
+    // Remove duplicates
+    currentSongs = currentSongs.filter(
+      (song,index,self)=>
+        index === self.findIndex(
+          s=>s.title===song.title && s.artist===song.artist
+        )
+    );
+
+    // If user searches artist name
+    // it loads maximum available songs
 
     if(currentSongs.length === 0){
       currentSongs = fallbackSongs;
@@ -437,7 +468,12 @@ function formatTime(sec){
 searchInput.addEventListener('keypress',(e)=>{
 
   if(e.key === 'Enter'){
-    loadSongs(searchInput.value);
+
+    const value = searchInput.value.trim();
+
+    if(value){
+      loadSongs(value + ' Punjabi');
+    }
   }
 });
 
@@ -646,8 +682,8 @@ tabs.forEach(btn=>{
   });
 });
 
-// Load Punjabi songs by default
-loadSongs('Diljit Dosanjh Karan Aujla Parmish Verma Punjabi');
+// Default Punjabi artists
+loadSongs('Diljit Dosanjh Parmish Verma Karan Aujla AP Dhillon Punjabi');
 loadDownloads();
 </script>
 
