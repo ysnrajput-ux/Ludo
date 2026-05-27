@@ -153,7 +153,7 @@ input[type="range"]{
     Home
   </button>
 
-  <button class="tab-btn" data-tab="downloads">
+  <button class="tab-btn" data-tab="downloads" onclick="openDownloads()">
     Downloads
   </button>
 </div>
@@ -506,7 +506,7 @@ searchInput.addEventListener('keypress',(e)=>{
     const value = searchInput.value.trim();
 
     if(value){
-      loadSongs(value);
+      loadSongs(value + ' trending top hits songs');
     }
   }
 });
@@ -525,7 +525,9 @@ async function downloadSong(index){
 
   const cache = await caches.open('offline-music');
 
-  await cache.add(song.stream);
+  const response = await fetch(song.stream);
+
+  await cache.put(song.stream,response.clone());
 
   const downloads = JSON.parse(localStorage.getItem('downloads') || '[]');
 
@@ -533,7 +535,7 @@ async function downloadSong(index){
 
   localStorage.setItem('downloads',JSON.stringify(downloads));
 
-  alert('Song Downloaded Offline!');
+  alert('Downloaded Offline ✅');
 
   loadDownloads();
 
@@ -613,6 +615,8 @@ async function addToPlaylist(index){
   );
 
   alert('Added To Playlist ❤️');
+
+  openPlaylist();
 }
 
 function addToPlaylist(index){
@@ -627,6 +631,8 @@ function addToPlaylist(index){
   );
 
   alert('Added To Playlist ❤️');
+
+  openPlaylist();
 }
 }
 
