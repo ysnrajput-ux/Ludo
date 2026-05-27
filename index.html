@@ -127,7 +127,7 @@ input[type="range"]{
 <header class="glass p-4 flex items-center justify-between">
   <div>
     <h1 class="text-3xl font-bold neon">YSN MUSIC</h1>
-    <p class="text-gray-400 text-sm">Punjabi Music Streaming</p>
+    <p class="text-gray-400 text-sm">Stream Every Vibe • Global Hits • Punjabi • Bollywood • LoFi • Nonstop Music</p>
   </div>
 
   <button id="installBtn" class="install-btn hidden">
@@ -246,6 +246,7 @@ const installBtn = document.getElementById('installBtn');
 const fullPlayer = document.getElementById('fullPlayer');
 
 let currentSongs = [];
+let playlists = JSON.parse(localStorage.getItem('ysn_playlists') || '[]');
 let currentIndex = 0;
 let deferredPrompt;
 
@@ -258,7 +259,13 @@ const featuredArtists = [
   'Karan Aujla',
   'AP Dhillon',
   'Sidhu Moosewala',
-  'Shubh'
+  'Shubh',
+  'Drake',
+  'The Weeknd',
+  'Taylor Swift',
+  'Travis Scott',
+  'Arijit Singh',
+  'Bad Bunny'
 ];
 
 const fallbackSongs = [
@@ -367,6 +374,13 @@ function renderSongs(songs){
       </div>
 
       <button
+        class="bg-pink-500 text-white px-3 py-2 rounded-full font-bold"
+        onclick="event.stopPropagation();addToPlaylist(${index})"
+      >
+        +
+      </button>
+
+      <button
         class="bg-green-400 text-black px-4 py-2 rounded-full font-bold"
         onclick="event.stopPropagation();downloadSong(${index})"
       >
@@ -472,7 +486,7 @@ searchInput.addEventListener('keypress',(e)=>{
     const value = searchInput.value.trim();
 
     if(value){
-      loadSongs(value + ' Punjabi');
+      loadSongs(value);
     }
   }
 });
@@ -502,6 +516,20 @@ async function downloadSong(index){
   alert('Song Downloaded Offline!');
 
   loadDownloads();
+
+function addToPlaylist(index){
+
+  const song = currentSongs[index];
+
+  playlists.push(song);
+
+  localStorage.setItem(
+    'ysn_playlists',
+    JSON.stringify(playlists)
+  );
+
+  alert('Added To Playlist ❤️');
+}
 }
 
 async function loadDownloads(){
@@ -682,8 +710,8 @@ tabs.forEach(btn=>{
   });
 });
 
-// Default Punjabi artists
-loadSongs('Diljit Dosanjh Parmish Verma Karan Aujla AP Dhillon Punjabi');
+// Default Trending Music Feed
+loadSongs('Trending Global Hits Punjabi Bollywood English');
 loadDownloads();
 </script>
 
