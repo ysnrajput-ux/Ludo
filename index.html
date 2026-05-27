@@ -186,9 +186,69 @@
             .game-wrapper { flex-direction: column; align-items: center; }
             .sidebar { min-width: 100%; }
         }
-    </style>
+    
+.start-menu{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.88);
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:9999;
+}
+.menu-box{
+background:#1F2937;
+padding:30px;
+border-radius:20px;
+width:320px;
+color:white;
+text-align:center;
+}
+.menu-box select,.menu-box button{
+width:100%;
+padding:12px;
+margin:10px 0;
+border:none;
+border-radius:10px;
+}
+.top-controls{
+display:flex;
+gap:10px;
+margin-top:10px;
+}
+.top-controls button{
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+}
+
+</style>
 </head>
 <body>
+
+<div class="start-menu" id="startMenu">
+<div class="menu-box">
+<h1>🎲 CLASSIC LUDO</h1>
+
+<select id="playerMode">
+<option value="2">2 Players</option>
+<option value="3">3 Players</option>
+<option value="4" selected>4 Players</option>
+</select>
+
+<select id="humanMode">
+<option value="1">1 Human</option>
+<option value="2">2 Humans</option>
+<option value="3">3 Humans</option>
+<option value="4">4 Humans</option>
+</select>
+
+<button id="startGameBtn">START GAME</button>
+</div>
+</div>
+
 <div class="container">
     <div class="game-wrapper">
         <div class="board-container">
@@ -203,7 +263,11 @@
                 <button class="roll-btn" id="rollBtn">ROLL DICE</button>
             </div>
             
-            <div class="message" id="message">Red's turn to roll!</div>
+            <div class="top-controls">
+<button id="pauseBtn">Pause</button>
+<button id="restartBtn">Restart</button>
+</div>
+<div class="message" id="message">Select mode to start</div>
             <div class="winner-banner" id="winnerBanner">🏆 Player Wins!</div>
         </div>
     </div>
@@ -804,7 +868,231 @@ function setMessage(msg) {
 }
 
 // Start
-initGame();
+
+
+
+// ===== CLEAN MULTIPLAYER SYSTEM =====
+
+state.paused = false;
+
+function setupPlayers(total,humans){
+
+    state.players = [];
+
+    let ids = [0,1,2,3];
+
+    if(total===2) ids=[0,1];
+    if(total===3) ids=[0,1,2];
+
+    ids.forEach((id,index)=>{
+
+        state.players.push({
+            id:id,
+            color:COLORS[id],
+            pieces:[0,0,0,0],
+            finished:false,
+            isBot:index>=humans
+        });
+
+    });
+
+    state.turn = 0;
+    state.state = 'WAIT_ROLL';
+    state.sixCount = 0;
+
+    updateUI();
+    drawBoard();
+
+    setMessage(`${state.players[0].color.name}'s turn`);
+
+    if(state.players[0].isBot){
+        setTimeout(botTurn,900);
+    }
+}
+
+document.getElementById('startGameBtn').onclick = function(){
+
+    let total =
+        parseInt(document.getElementById('playerMode').value);
+
+    let humans =
+        parseInt(document.getElementById('humanMode').value);
+
+    if(humans > total) humans = total;
+
+    document.getElementById('startMenu').style.display='none';
+
+    setupPlayers(total,humans);
+};
+
+document.getElementById('pauseBtn').onclick = function(){
+
+    state.paused = !state.paused;
+
+    this.innerText =
+        state.paused ? 'Resume' : 'Pause';
+};
+
+document.getElementById('restartBtn').onclick = function(){
+    location.reload();
+};
+
+const oldNextTurn = nextTurn;
+
+nextTurn = function(){
+
+    let loops = 0;
+
+    do{
+
+        state.turn++;
+
+        if(state.turn >= state.players.length){
+            state.turn = 0;
+        }
+
+        loops++;
+
+    }while(
+        state.players[state.turn].finished &&
+        loops < 10
+    );
+
+    state.sixCount = 0;
+    state.state = 'WAIT_ROLL';
+
+    updateUI();
+
+    setMessage(
+        `${state.players[state.turn].color.name}'s turn`
+    );
+
+    if(
+        state.players[state.turn].isBot &&
+        !state.paused
+    ){
+        setTimeout(botTurn,900);
+    }
+};
+
+const oldUpdateUI = updateUI;
+
+updateUI = function(){
+
+    oldUpdateUI();
+
+    const btn =
+        document.getElementById('rollBtn');
+
+    if(state.players[state.turn].isBot){
+
+        btn.disabled = true;
+        btn.innerText = 'BOT TURN';
+
+    }else if(state.state === 'WAIT_ROLL'){
+
+        btn.disabled = false;
+        btn.innerText = 'ROLL DICE';
+    }
+};
+
+function botTurn(){
+
+    if(state.paused) return;
+
+    if(state.state !== 'WAIT_ROLL') return;
+
+    rollDice();
+
+    const wait = setInterval(()=>{
+
+        if(state.state === 'WAIT_MOVE'){
+
+            clearInterval(wait);
+
+            let valid =
+                getValidMoves(
+                    state.turn,
+                    state.diceVal
+                );
+
+            if(!valid.length) return;
+
+            let best = valid[0];
+            let score = -9999;
+
+            valid.forEach(piece=>{
+
+                let s = botScore(piece);
+
+                if(s > score){
+                    score = s;
+                    best = piece;
+                }
+
+            });
+
+            setTimeout(()=>{
+                executeMove(
+                    state.turn,
+                    best,
+                    state.diceVal
+                );
+            },700);
+        }
+
+    },100);
+}
+
+function botScore(pieceIdx){
+
+    let p =
+        state.players[state.turn];
+
+    let pos =
+        p.pieces[pieceIdx];
+
+    let score = 0;
+
+    if(pos===0 && state.diceVal===6){
+        score += 500;
+    }
+
+    if(pos>=101){
+        score += 2000;
+    }
+
+    let target = pos + state.diceVal;
+
+    if(target >= 106){
+        score += 10000;
+    }
+
+    if(
+        target<=52 &&
+        STAR_SAFE_SQUARES.includes(target-1)
+    ){
+        score += 1200;
+    }
+
+    state.players.forEach(op=>{
+
+        if(op.id===p.id) return;
+
+        op.pieces.forEach(enemy=>{
+
+            if(enemy===target){
+                score += 6000;
+            }
+
+        });
+
+    });
+
+    score += target * 3;
+
+    return score;
+}
 
 </script>
 </body>
