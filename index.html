@@ -802,12 +802,35 @@ function finalizeMove(pId, pieceIdx, diceVal, newPos) {
         if (diceVal === 6) turnContinues = true;
         
         if (turnContinues) {
+
             state.state = 'WAIT_ROLL';
-            if (!document.querySelector('.message').textContent.includes("Captured") && !document.querySelector('.message').textContent.includes("home")) {
+
+            if (
+                !document.querySelector('.message')
+                .textContent.includes("Captured") &&
+                !document.querySelector('.message')
+                .textContent.includes("home")
+            ) {
+
                 setMessage("Rolled a 6! Roll again.");
             }
+
             updateUI();
+
+            // FIX BOT EXTRA TURN FREEZE
+            if(
+                state.players[state.turn] &&
+                state.players[state.turn].isBot &&
+                !state.paused
+            ){
+
+                setTimeout(()=>{
+                    botTurn();
+                },900);
+            }
+
         } else {
+
             nextTurn();
         }
     }, turnContinues ? 1200 : 400);
