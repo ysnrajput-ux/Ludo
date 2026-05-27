@@ -1,253 +1,340 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>YSN MUSIC PWA</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.tailwindcss.com"></script>
+<title>YSN MUSIC</title>
 
 <meta name="theme-color" content="#00ff99">
 
+<script src="https://cdn.tailwindcss.com"></script>
+
 <style>
+
 *{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
 }
 
 body{
-  background:#050505;
-  color:white;
-  font-family:Arial,sans-serif;
-  overflow:hidden;
+background:#050505;
+color:white;
+overflow:hidden;
 }
 
 .glass{
-  background:rgba(255,255,255,0.06);
-  backdrop-filter:blur(18px);
-  border:1px solid rgba(255,255,255,0.06);
-}
-
-.neon{
-  color:#00ff99;
+background:rgba(255,255,255,0.06);
+backdrop-filter:blur(20px);
+border:1px solid rgba(255,255,255,0.05);
 }
 
 .song-card{
-  transition:0.3s;
+transition:.25s;
+cursor:pointer;
 }
 
 .song-card:hover{
-  transform:scale(1.02);
-  background:rgba(255,255,255,0.09);
-  box-shadow:0 0 25px rgba(0,255,153,0.12);
+transform:scale(1.02);
+background:rgba(255,255,255,.08);
 }
 
 .song-cover{
-  width:65px;
-  height:65px;
-  border-radius:18px;
-  object-fit:cover;
+width:72px;
+height:72px;
+border-radius:18px;
+object-fit:cover;
 }
 
 .bottom-nav{
-  position:fixed;
-  bottom:0;
-  left:0;
-  width:100%;
-  height:82px;
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  z-index:100;
-  background:rgba(20,20,20,0.75);
-  backdrop-filter:blur(20px);
-  border-top:1px solid rgba(255,255,255,0.08);
+position:fixed;
+bottom:0;
+left:0;
+width:100%;
+height:85px;
+display:flex;
+justify-content:space-around;
+align-items:center;
+background:rgba(15,15,15,.95);
+backdrop-filter:blur(30px);
+border-top:1px solid rgba(255,255,255,.05);
+z-index:999;
 }
 
 .bottom-nav button{
-  font-size:22px;
+display:flex;
+flex-direction:column;
+align-items:center;
+font-size:12px;
+gap:3px;
+color:#aaa;
+transition:.2s;
+}
+
+.bottom-nav button:hover{
+color:#00ff99;
+transform:translateY(-2px);
 }
 
 .mini-player{
-  position:fixed;
-  bottom:82px;
-  left:10px;
-  right:10px;
-  height:78px;
-  border-radius:26px;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:10px 16px;
-  z-index:99;
+position:fixed;
+bottom:92px;
+left:10px;
+right:10px;
+padding:12px;
+border-radius:24px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+background:rgba(20,20,20,.96);
+backdrop-filter:blur(30px);
+z-index:998;
 }
 
-.tab-btn{
-  padding:10px 20px;
-  border-radius:999px;
-  background:rgba(255,255,255,0.08);
+.progress{
+height:4px;
+width:100%;
+background:#222;
+border-radius:10px;
+overflow:hidden;
+margin-top:5px;
 }
 
-.active-tab{
-  background:#00ff99;
-  color:black;
-  font-weight:bold;
-}
-
-input[type="range"]{
-  accent-color:#00ff99;
+.progress div{
+height:100%;
+width:0%;
+background:#00ff99;
 }
 
 .rotate{
-  animation:spin 12s linear infinite;
+animation:spin 10s linear infinite;
 }
 
 @keyframes spin{
-  from{transform:rotate(0deg)}
-  to{transform:rotate(360deg)}
+from{transform:rotate(0)}
+to{transform:rotate(360deg)}
 }
 
 .scrollbar-hide::-webkit-scrollbar{
-  display:none;
+display:none;
 }
 
 #fullPlayer{
-  background:linear-gradient(to bottom,#111,#000);
+background:linear-gradient(to bottom,#101010,#000);
 }
 
 .install-btn{
-  background:#00ff99;
-  color:black;
-  padding:10px 18px;
-  border-radius:999px;
-  font-weight:bold;
+background:#00ff99;
+color:black;
+padding:10px 18px;
+border-radius:999px;
+font-weight:bold;
 }
+
+input[type=range]{
+accent-color:#00ff99;
+}
+
 </style>
 </head>
+
 <body>
 
 <div class="h-screen flex flex-col">
 
 <header class="glass p-4 flex items-center justify-between">
-  <div>
-    <h1 class="text-3xl font-bold neon">YSN MUSIC</h1>
-    <p class="text-gray-400 text-sm">Stream Every Vibe • Global Hits • Punjabi • Bollywood • LoFi • Nonstop Music</p>
-  </div>
 
-  <button id="installBtn" class="install-btn hidden">
-    Install
-  </button>
+<div>
+
+<h1 class="text-4xl font-black text-green-400">
+YSN MUSIC
+</h1>
+
+<p class="text-gray-400 text-sm mt-1">
+Global Hits • Punjabi • Bollywood • LoFi • Nonstop Vibes
+</p>
+
+</div>
+
+<button id="installBtn" class="install-btn hidden">
+Install
+</button>
+
 </header>
 
 <div class="p-4">
-  <input
-    id="searchInput"
-    placeholder="Search any song..."
-    class="w-full px-5 py-4 rounded-2xl glass outline-none"
-  />
-</div>
 
-<div class="px-4 flex gap-3 mb-3">
-  <button class="tab-btn active-tab" data-tab="home">
-    Home
-  </button>
-
-  <button class="tab-btn" data-tab="downloads" onclick="openDownloads()">
-    Downloads
-  </button>
-</div>
-
-<div id="songList" class="flex-1 overflow-y-auto px-4 pb-40 scrollbar-hide"></div>
-
-<div id="downloadsList" class="hidden flex-1 overflow-y-auto px-4 pb-40 scrollbar-hide"></div>
-
-<div id="miniPlayer" class="mini-player glass">
-
-  <img
-    id="miniCover"
-    src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400"
-    class="w-14 h-14 rounded-xl object-cover"
-  />
-
-  <div class="flex-1 overflow-hidden">
-    <h3 id="miniTitle" class="font-bold truncate">
-      No Song Playing
-    </h3>
-
-    <p id="miniArtist" class="text-gray-400 text-sm truncate">
-      Artist
-    </p>
-  </div>
-
-  <button id="playPauseBtn" class="text-2xl">
-    ▶
-  </button>
+<input
+id="searchInput"
+placeholder="Search songs or artists..."
+class="w-full px-5 py-4 rounded-3xl glass outline-none text-white"
+/>
 
 </div>
 
-<div id="fullPlayer" class="hidden fixed inset-0 z-50 p-6 flex flex-col">
+<div
+id="songList"
+class="flex-1 overflow-y-auto px-4 pb-44 scrollbar-hide"
+></div>
 
-  <div class="flex items-center justify-between mb-6">
-    <button id="closePlayer" class="text-3xl">↓</button>
-    <h2 class="text-lg">Now Playing</h2>
-    <div></div>
-  </div>
+<div
+id="downloadsList"
+class="hidden flex-1 overflow-y-auto px-4 pb-44 scrollbar-hide"
+></div>
 
-  <div class="flex-1 flex flex-col justify-center items-center">
+<!-- MINI PLAYER -->
 
-    <img
-      id="playerCover"
-      src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400"
-      class="w-72 h-72 rounded-3xl object-cover rotate"
-    />
+<div
+id="miniPlayer"
+class="mini-player hidden"
+>
 
-    <h2 id="playerTitle" class="text-3xl font-bold mt-8 text-center"></h2>
+<div class="flex items-center gap-3 flex-1 overflow-hidden">
 
-    <p id="playerArtist" class="text-gray-400 mt-2"></p>
+<img
+id="miniCover"
+class="w-14 h-14 rounded-2xl object-cover"
+/>
 
-    <input
-      id="seekBar"
-      type="range"
-      value="0"
-      class="w-full mt-10"
-    />
+<div class="overflow-hidden w-full">
 
-    <div class="flex justify-between w-full mt-2 text-sm text-gray-400">
-      <span id="currentTime">0:00</span>
-      <span id="duration">0:00</span>
-    </div>
+<h2
+id="miniTitle"
+class="font-bold truncate"
+>
+No Song
+</h2>
 
-    <div class="flex items-center gap-10 mt-12 text-4xl">
-      <button id="prevBtn">⏮</button>
-      <button id="bigPlayBtn">▶</button>
-      <button id="nextBtn">⏭</button>
-    </div>
+<p
+id="miniArtist"
+class="text-gray-400 text-sm truncate"
+>
+Artist
+</p>
 
-  </div>
+<div class="progress">
+<div id="progressBar"></div>
+</div>
 
 </div>
 
-<nav class="bottom-nav glass">
-  <button onclick="showHome()" class="flex flex-col items-center text-sm text-white/90 hover:text-green-400 transition">
-    <span class="text-2xl">🏠</span>
-    Home
-  </button>
+</div>
 
-  <button onclick="focusSearch()" class="flex flex-col items-center text-sm text-white/90 hover:text-green-400 transition">
-    <span class="text-2xl">🔍</span>
-    Search
-  </button>
+<button
+id="playBtn"
+class="text-3xl text-green-400"
+>
+▶
+</button>
 
-  <button onclick="openPlaylist()" class="flex flex-col items-center text-sm text-white/90 hover:text-green-400 transition">
-    <span class="text-2xl">🎵</span>
-    Playlist
-  </button>
+</div>
 
-  <button onclick="openDownloads()" class="flex flex-col items-center text-sm text-white/90 hover:text-green-400 transition">
-    <span class="text-2xl">⬇️</span>
-    Offline
-  </button>
+<!-- FULL PLAYER -->
+
+<div
+id="fullPlayer"
+class="hidden fixed inset-0 z-50 p-6 flex flex-col"
+>
+
+<div class="flex items-center justify-between">
+
+<button
+id="closePlayer"
+class="text-4xl"
+>
+↓
+</button>
+
+<h2 class="text-lg">
+Now Playing
+</h2>
+
+<div></div>
+
+</div>
+
+<div class="flex-1 flex flex-col justify-center items-center">
+
+<img
+id="playerCover"
+class="w-72 h-72 rounded-3xl object-cover rotate"
+/>
+
+<h2
+id="playerTitle"
+class="text-3xl font-black mt-8 text-center"
+></h2>
+
+<p
+id="playerArtist"
+class="text-gray-400 mt-2"
+></p>
+
+<input
+id="seekBar"
+type="range"
+value="0"
+class="w-full mt-10"
+/>
+
+<div class="flex justify-between w-full mt-2 text-sm text-gray-400">
+
+<span id="currentTime">
+0:00
+</span>
+
+<span id="duration">
+0:00
+</span>
+
+</div>
+
+<div class="flex items-center gap-10 mt-12 text-5xl">
+
+<button id="prevBtn">
+⏮
+</button>
+
+<button id="bigPlayBtn">
+▶
+</button>
+
+<button id="nextBtn">
+⏭
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- NAV -->
+
+<nav class="bottom-nav">
+
+<button onclick="showHome()">
+<span class="text-2xl">🏠</span>
+Home
+</button>
+
+<button onclick="focusSearch()">
+<span class="text-2xl">🔍</span>
+Search
+</button>
+
+<button onclick="openPlaylist()">
+<span class="text-2xl">🎵</span>
+Playlist
+</button>
+
+<button onclick="openDownloads()">
+<span class="text-2xl">⬇</span>
+Offline
+</button>
+
 </nav>
 
 </div>
@@ -255,568 +342,791 @@ input[type="range"]{
 <audio id="audio"></audio>
 
 <script>
-const audio = document.getElementById('audio');
-const songList = document.getElementById('songList');
-const downloadsList = document.getElementById('downloadsList');
-const searchInput = document.getElementById('searchInput');
-const playPauseBtn = document.getElementById('playPauseBtn');
-const bigPlayBtn = document.getElementById('bigPlayBtn');
-const seekBar = document.getElementById('seekBar');
-const installBtn = document.getElementById('installBtn');
-const fullPlayer = document.getElementById('fullPlayer');
 
-let currentSongs = [];
-let playlists = JSON.parse(localStorage.getItem('ysn_playlists') || '[]');
-let currentIndex = 0;
+const audio=document.getElementById('audio');
+
+const songList=document.getElementById('songList');
+
+const downloadsList=document.getElementById('downloadsList');
+
+const searchInput=document.getElementById('searchInput');
+
+const miniPlayer=document.getElementById('miniPlayer');
+
+const playBtn=document.getElementById('playBtn');
+
+const bigPlayBtn=document.getElementById('bigPlayBtn');
+
+const seekBar=document.getElementById('seekBar');
+
+const progressBar=document.getElementById('progressBar');
+
+const AUDIOUS='https://discoveryprovider.audius.co/v1';
+
+const ITUNES='https://itunes.apple.com/search';
+
+let currentSongs=[];
+
+let currentIndex=0;
+
 let deferredPrompt;
 
-const AUDIOUS_API = 'https://discoveryprovider.audius.co/v1';
-const ITUNES_API = 'https://itunes.apple.com/search';
+// TRENDING DEFAULT SONGS
 
-const featuredArtists = [
-  'Diljit Dosanjh',
-  'Parmish Verma',
-  'Karan Aujla',
-  'AP Dhillon',
-  'Sidhu Moosewala',
-  'Shubh',
-  'Drake',
-  'The Weeknd',
-  'Taylor Swift',
-  'Travis Scott',
-  'Arijit Singh',
-  'Bad Bunny'
+const defaultSongs=[
+'Drake',
+'Taylor Swift',
+'Diljit Dosanjh',
+'Karan Aujla',
+'AP Dhillon',
+'Sidhu Moosewala',
+'Arijit Singh',
+'The Weeknd'
 ];
 
-const fallbackSongs = [
-  {
-    title:'Blinding Lights',
-    artist:'The Weeknd',
-    cover:'https://i.scdn.co/image/ab67616d0000b2730f5d6e4f0b4e4f8b0e9d0b4f',
-    stream:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
-  },
-  {
-    title:'Levitating',
-    artist:'Dua Lipa',
-    cover:'https://i.scdn.co/image/ab67616d0000b273d4daf28d55fe419d5f1e0c5',
-    stream:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
-  },
-  {
-    title:'Stay',
-    artist:'Justin Bieber',
-    cover:'https://i.scdn.co/image/ab67616d0000b273d3d0f1d4d4f3d0f3d0f3d0f3',
-    stream:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
-  }
-];
+// LOAD SONGS
 
-async function loadSongs(query='Punjabi songs'){
+async function loadSongs(query='Trending Songs'){
 
-  try{
+songList.innerHTML=`
+<div class="text-center py-10 text-gray-400">
+Loading Songs...
+</div>
+`;
 
-    // Try Audius API first
-    const audiusRes = await fetch(
-      `${AUDIOUS_API}/tracks/search?query=${encodeURIComponent(query)}&app_name=YSNMUSIC`
-    );
+try{
 
-    const audiusData = await audiusRes.json();
+// AUDIUS SEARCH
 
-    let audiusSongs = (audiusData.data || []).map(song => ({
-      title: song.title,
-      artist: song.user?.name || 'Unknown Artist',
-      cover:
-        song.artwork?.['480x480'] ||
-        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400',
-      stream: `${AUDIOUS_API}/tracks/${song.id}/stream?app_name=YSNMUSIC`
-    }));
+const a=await fetch(
+`${AUDIOUS}/tracks/search?query=${encodeURIComponent(query)}&app_name=YSNMUSIC`
+);
 
-    // iTunes Punjabi songs backup
-    const itunesRes = await fetch(
-      `${ITUNES_API}?term=${encodeURIComponent(query)}&media=music&limit=50`
-    );
+const ad=await a.json();
 
-    const itunesData = await itunesRes.json();
+let audius=(ad.data||[]).map(song=>({
 
-    let itunesSongs = (itunesData.results || [])
-      .filter(song => song.previewUrl)
-      .map(song => ({
-        title: song.trackName,
-        artist: song.artistName,
-        cover: song.artworkUrl100?.replace('100x100','600x600'),
-        stream: song.previewUrl
-      }));
+title:song.title,
 
-    // Merge all songs
-    currentSongs = [...audiusSongs, ...itunesSongs];
+artist:song.user?.name || 'Unknown',
 
-    // Remove duplicates
-    currentSongs = currentSongs.filter(
-      (song,index,self)=>
-        index === self.findIndex(
-          s=>s.title===song.title && s.artist===song.artist
-        )
-    );
+cover:
+song.artwork?.['480x480']
+||
+'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=600',
 
-    // If user searches artist name
-    // it loads maximum available songs
+stream:
+`${AUDIOUS}/tracks/${song.id}/stream?app_name=YSNMUSIC`
 
-    if(currentSongs.length === 0){
-      currentSongs = fallbackSongs;
-    }
+}));
 
-    renderSongs(currentSongs);
+// ITUNES SEARCH
 
-  }catch(err){
+const i=await fetch(
+`${ITUNES}?term=${encodeURIComponent(query)}&media=music&limit=50`
+);
 
-    console.log(err);
+const id=await i.json();
 
-    currentSongs = fallbackSongs;
+let itunes=(id.results||[])
+.filter(song=>song.previewUrl)
+.map(song=>({
 
-    renderSongs(currentSongs);
-  }
+title:song.trackName,
+
+artist:song.artistName,
+
+cover:
+song.artworkUrl100
+?.replace('100x100','600x600'),
+
+stream:song.previewUrl
+
+}));
+
+currentSongs=[...audius,...itunes];
+
+// REMOVE DUPLICATES
+
+currentSongs=currentSongs.filter(
+(song,index,self)=>
+index===self.findIndex(
+s=>s.title===song.title &&
+s.artist===song.artist
+)
+);
+
+// SORT POPULAR SONGS FIRST
+
+currentSongs.sort((a,b)=>{
+
+const q=query.toLowerCase();
+
+const aScore=
+(a.artist.toLowerCase().includes(q)?10:0)+
+(a.title.toLowerCase().includes(q)?5:0);
+
+const bScore=
+(b.artist.toLowerCase().includes(q)?10:0)+
+(b.title.toLowerCase().includes(q)?5:0);
+
+return bScore-aScore;
+
+});
+
+renderSongs(currentSongs);
+
+}catch(err){
+
+console.log(err);
+
+songList.innerHTML=`
+<div class="text-center py-10 text-red-400">
+Unable To Load Songs
+</div>
+`;
+
 }
+
+}
+
+// RENDER SONGS
 
 function renderSongs(songs){
 
-  songList.innerHTML='';
+songList.innerHTML='';
 
-  songs.forEach((song,index)=>{
+songs.forEach((song,index)=>{
 
-    const card = document.createElement('div');
+const card=document.createElement('div');
 
-    card.className='song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
+card.className=
+'song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
 
-    card.innerHTML=`
-      <img src="${song.cover}" class="song-cover">
+card.innerHTML=`
 
-      <div class="flex-1 overflow-hidden">
-        <h2 class="font-bold truncate">${song.title}</h2>
-        <p class="text-gray-400 text-sm truncate">${song.artist}</p>
-      </div>
+<img
+src="${song.cover}"
+class="song-cover"
+>
 
-      <button
-        class="bg-pink-500 text-white px-3 py-2 rounded-full font-bold"
-        onclick="event.stopPropagation();addToPlaylist(${index})"
-      >
-        +
-      </button>
+<div class="flex-1 overflow-hidden">
 
-      <button
-        class="bg-green-400 text-black px-4 py-2 rounded-full font-bold"
-        onclick="event.stopPropagation();downloadSong(${index})"
-      >
-        ⬇
-      </button>
-    `;
+<h2 class="font-bold truncate text-lg">
+${song.title}
+</h2>
 
-    card.addEventListener('click',()=>{
-      playSong(index);
-    });
+<p class="text-gray-400 text-sm truncate">
+${song.artist}
+</p>
 
-    songList.appendChild(card);
+</div>
 
-  });
+<div class="flex gap-2">
+
+<button
+onclick="event.stopPropagation();addPlaylist(${index})"
+class="w-11 h-11 rounded-full bg-pink-500 text-white text-xl"
+>
++
+</button>
+
+<button
+onclick="event.stopPropagation();downloadSong(${index})"
+class="w-11 h-11 rounded-full bg-green-400 text-black text-xl"
+>
+⬇
+</button>
+
+</div>
+`;
+
+card.onclick=()=>playSong(index);
+
+songList.appendChild(card);
+
+});
+
 }
+
+// PLAY SONG
 
 function playSong(index){
 
-  currentIndex = index;
+currentIndex=index;
 
-  const song = currentSongs[index];
+const song=currentSongs[index];
 
-  audio.src = song.stream;
+audio.src=song.stream;
 
-  audio.play();
+audio.play();
 
-  updatePlayer(song);
+miniPlayer.classList.remove('hidden');
 
-  setupMediaSession(song);
+document.getElementById('miniCover').src=song.cover;
+
+document.getElementById('miniTitle').innerText=song.title;
+
+document.getElementById('miniArtist').innerText=song.artist;
+
+document.getElementById('playerCover').src=song.cover;
+
+document.getElementById('playerTitle').innerText=song.title;
+
+document.getElementById('playerArtist').innerText=song.artist;
+
+playBtn.innerText='⏸';
+
+bigPlayBtn.innerText='⏸';
+
+setupMediaSession(song);
+
 }
 
-function updatePlayer(song){
-
-  document.getElementById('miniTitle').textContent = song.title;
-  document.getElementById('miniArtist').textContent = song.artist;
-
-  document.getElementById('playerTitle').textContent = song.title;
-  document.getElementById('playerArtist').textContent = song.artist;
-
-  document.getElementById('miniCover').src = song.cover;
-  document.getElementById('playerCover').src = song.cover;
-}
+// PLAY PAUSE
 
 function togglePlay(){
 
-  if(audio.paused){
-    audio.play();
-  }else{
-    audio.pause();
-  }
+if(audio.paused){
+
+audio.play();
+
+playBtn.innerText='⏸';
+
+bigPlayBtn.innerText='⏸';
+
+}else{
+
+audio.pause();
+
+playBtn.innerText='▶';
+
+bigPlayBtn.innerText='▶';
+
 }
 
-playPauseBtn.onclick = togglePlay;
-bigPlayBtn.onclick = togglePlay;
-
-nextBtn.onclick = ()=>{
-  currentIndex = (currentIndex + 1) % currentSongs.length;
-  playSong(currentIndex);
 }
 
-prevBtn.onclick = ()=>{
-  currentIndex = (currentIndex - 1 + currentSongs.length) % currentSongs.length;
-  playSong(currentIndex);
-}
+playBtn.onclick=togglePlay;
 
-audio.addEventListener('play',()=>{
-  playPauseBtn.textContent='⏸';
-  bigPlayBtn.textContent='⏸';
-});
+bigPlayBtn.onclick=togglePlay;
 
-audio.addEventListener('pause',()=>{
-  playPauseBtn.textContent='▶';
-  bigPlayBtn.textContent='▶';
-});
+// NEXT PREVIOUS
+
+nextBtn.onclick=()=>{
+
+currentIndex=
+(currentIndex+1)%currentSongs.length;
+
+playSong(currentIndex);
+
+};
+
+prevBtn.onclick=()=>{
+
+currentIndex=
+(currentIndex-1+currentSongs.length)
+%currentSongs.length;
+
+playSong(currentIndex);
+
+};
+
+// SEEK
 
 audio.addEventListener('timeupdate',()=>{
 
-  seekBar.max = audio.duration || 0;
-  seekBar.value = audio.currentTime;
+if(audio.duration){
 
-  currentTime.textContent = formatTime(audio.currentTime);
-  duration.textContent = formatTime(audio.duration);
+seekBar.max=audio.duration;
+
+seekBar.value=audio.currentTime;
+
+const percent=
+(audio.currentTime/audio.duration)*100;
+
+progressBar.style.width=percent+'%';
+
+currentTime.innerText=
+formatTime(audio.currentTime);
+
+duration.innerText=
+formatTime(audio.duration);
+
+}
+
 });
 
-seekBar.addEventListener('input',()=>{
-  audio.currentTime = seekBar.value;
-});
+seekBar.oninput=()=>{
+
+audio.currentTime=seekBar.value;
+
+};
 
 function formatTime(sec){
 
-  if(!sec) return '0:00';
+if(!sec) return '0:00';
 
-  const min = Math.floor(sec/60);
-  const secs = Math.floor(sec%60);
+const m=Math.floor(sec/60);
 
-  return `${min}:${secs.toString().padStart(2,'0')}`;
+const s=Math.floor(sec%60);
+
+return `${m}:${s.toString().padStart(2,'0')}`;
+
 }
+
+// SEARCH
 
 searchInput.addEventListener('keypress',(e)=>{
 
-  if(e.key === 'Enter'){
+if(e.key==='Enter'){
 
-    const value = searchInput.value.trim();
+const q=searchInput.value.trim();
 
-    if(value){
-      loadSongs(value + ' trending top hits songs');
-    }
-  }
+if(q){
+
+// ARTIST SEARCH
+
+loadSongs(
+q
+);
+
+}
+
+}
+
 });
 
-miniPlayer.onclick = ()=>{
-  fullPlayer.classList.remove('hidden');
+// PLAYER OPEN CLOSE
+
+miniPlayer.onclick=()=>{
+
+fullPlayer.classList.remove('hidden');
+
+};
+
+closePlayer.onclick=()=>{
+
+fullPlayer.classList.add('hidden');
+
+};
+
+// PLAYLIST
+
+function addPlaylist(index){
+
+const song=currentSongs[index];
+
+let playlist=
+JSON.parse(
+localStorage.getItem('ysn_playlist')||'[]'
+);
+
+if(
+!playlist.find(
+s=>s.title===song.title
+)
+){
+
+playlist.push(song);
+
+localStorage.setItem(
+'ysn_playlist',
+JSON.stringify(playlist)
+);
+
+alert('Added To Playlist ❤️');
+
 }
 
-closePlayer.onclick = ()=>{
-  fullPlayer.classList.add('hidden');
-}
-
-async function downloadSong(index){
-
-  const song = currentSongs[index];
-
-  const cache = await caches.open('offline-music');
-
-  const response = await fetch(song.stream);
-
-  await cache.put(song.stream,response.clone());
-
-  const downloads = JSON.parse(localStorage.getItem('downloads') || '[]');
-
-  downloads.push(song);
-
-  localStorage.setItem('downloads',JSON.stringify(downloads));
-
-  alert('Downloaded Offline ✅');
-
-  loadDownloads();
-
-function showHome(){
-  songList.classList.remove('hidden');
-  downloadsList.classList.add('hidden');
-}
-
-function openDownloads(){
-  songList.classList.add('hidden');
-  downloadsList.classList.remove('hidden');
-}
-
-function focusSearch(){
-  searchInput.focus();
-  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function openPlaylist(){
 
-  const playlist = JSON.parse(
-    localStorage.getItem('ysn_playlists') || '[]'
-  );
+songList.classList.add('hidden');
 
-  if(playlist.length === 0){
-    alert('No songs added to playlist yet ❤️');
-    return;
-  }
+downloadsList.classList.remove('hidden');
 
-  downloadsList.innerHTML='';
+downloadsList.innerHTML='';
 
-  playlist.forEach((song,index)=>{
+const playlist=
+JSON.parse(
+localStorage.getItem('ysn_playlist')||'[]'
+);
 
-    const card=document.createElement('div');
+if(playlist.length===0){
 
-    card.className='song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
+downloadsList.innerHTML=`
+<div class="text-center py-20 text-gray-400">
+No Playlist Songs
+</div>
+`;
 
-    card.innerHTML=`
-      <img src="${song.cover}" class="song-cover">
+return;
 
-      <div class="flex-1 overflow-hidden">
-        <h2 class="font-bold truncate">${song.title}</h2>
-        <p class="text-gray-400 text-sm truncate">${song.artist}</p>
-      </div>
-
-      <button class="bg-red-500 px-4 py-2 rounded-full">
-        ❤️
-      </button>
-    `;
-
-    card.addEventListener('click',()=>{
-      audio.src=song.stream;
-      audio.play();
-      updatePlayer(song);
-    });
-
-    downloadsList.appendChild(card);
-  });
-
-  songList.classList.add('hidden');
-  downloadsList.classList.remove('hidden');
 }
 
-async function addToPlaylist(index){
+playlist.forEach(song=>{
 
-  const song=currentSongs[index];
+const card=document.createElement('div');
 
-  let playlist=JSON.parse(
-    localStorage.getItem('ysn_playlists') || '[]'
-  );
+card.className=
+'song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
 
-  playlist.push(song);
+card.innerHTML=`
 
-  localStorage.setItem(
-    'ysn_playlists',
-    JSON.stringify(playlist)
-  );
+<img
+src="${song.cover}"
+class="song-cover"
+>
 
-  alert('Added To Playlist ❤️');
+<div class="flex-1 overflow-hidden">
 
-  openPlaylist();
+<h2 class="font-bold truncate">
+${song.title}
+</h2>
+
+<p class="text-gray-400 text-sm truncate">
+${song.artist}
+</p>
+
+</div>
+`;
+
+card.onclick=()=>{
+
+audio.src=song.stream;
+
+audio.play();
+
+};
+
+downloadsList.appendChild(card);
+
+});
+
 }
 
-function addToPlaylist(index){
+// DOWNLOAD SONG
 
-  const song = currentSongs[index];
+async function downloadSong(index){
 
-  playlists.push(song);
+try{
 
-  localStorage.setItem(
-    'ysn_playlists',
-    JSON.stringify(playlists)
-  );
+const song=currentSongs[index];
 
-  alert('Added To Playlist ❤️');
+const cache=
+await caches.open('offline-music');
 
-  openPlaylist();
+const response=
+await fetch(song.stream);
+
+await cache.put(song.stream,response.clone());
+
+let downloads=
+JSON.parse(
+localStorage.getItem('downloads')||'[]'
+);
+
+if(
+!downloads.find(
+s=>s.title===song.title
+)
+){
+
+downloads.push(song);
+
 }
+
+localStorage.setItem(
+'downloads',
+JSON.stringify(downloads)
+);
+
+alert('Downloaded Offline ✅');
+
+}catch(err){
+
+alert('Download Failed ❌');
+
 }
 
-async function loadDownloads(){
-
-  downloadsList.innerHTML='';
-
-  const downloads = JSON.parse(localStorage.getItem('downloads') || '[]');
-
-  downloads.forEach(song=>{
-
-    const card = document.createElement('div');
-
-    card.className='song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
-
-    card.innerHTML=`
-      <img src="${song.cover}" class="song-cover">
-
-      <div class="flex-1 overflow-hidden">
-        <h2 class="font-bold truncate">${song.title}</h2>
-        <p class="text-gray-400 text-sm truncate">${song.artist}</p>
-      </div>
-    `;
-
-    card.addEventListener('click',async()=>{
-
-      const cache = await caches.open('offline-music');
-
-      const response = await cache.match(song.stream);
-
-      if(response){
-
-        const blob = await response.blob();
-
-        audio.src = URL.createObjectURL(blob);
-
-        audio.play();
-
-        updatePlayer(song);
-      }
-    });
-
-    downloadsList.appendChild(card);
-
-  });
 }
+
+// OPEN DOWNLOADS
+
+async function openDownloads(){
+
+songList.classList.add('hidden');
+
+downloadsList.classList.remove('hidden');
+
+downloadsList.innerHTML='';
+
+const downloads=
+JSON.parse(
+localStorage.getItem('downloads')||'[]'
+);
+
+if(downloads.length===0){
+
+downloadsList.innerHTML=`
+<div class="text-center py-20 text-gray-400">
+No Offline Songs
+</div>
+`;
+
+return;
+
+}
+
+downloads.forEach(song=>{
+
+const card=document.createElement('div');
+
+card.className=
+'song-card glass rounded-3xl p-3 flex items-center gap-4 mb-4';
+
+card.innerHTML=`
+
+<img
+src="${song.cover}"
+class="song-cover"
+>
+
+<div class="flex-1 overflow-hidden">
+
+<h2 class="font-bold truncate">
+${song.title}
+</h2>
+
+<p class="text-gray-400 text-sm truncate">
+${song.artist}
+</p>
+
+</div>
+`;
+
+card.onclick=async()=>{
+
+const cache=
+await caches.open('offline-music');
+
+const response=
+await cache.match(song.stream);
+
+if(response){
+
+const blob=
+await response.blob();
+
+audio.src=
+URL.createObjectURL(blob);
+
+audio.play();
+
+}
+
+};
+
+downloadsList.appendChild(card);
+
+});
+
+}
+
+// NAVIGATION
+
+function showHome(){
+
+songList.classList.remove('hidden');
+
+downloadsList.classList.add('hidden');
+
+}
+
+function focusSearch(){
+
+window.scrollTo({
+top:0,
+behavior:'smooth'
+});
+
+searchInput.focus();
+
+}
+
+// MEDIA SESSION
 
 function setupMediaSession(song){
 
-  if('mediaSession' in navigator){
+if('mediaSession' in navigator){
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title:song.title,
-      artist:song.artist,
-      artwork:[
-        {
-          src:song.cover,
-          sizes:'512x512',
-          type:'image/png'
-        }
-      ]
-    });
+navigator.mediaSession.metadata=
+new MediaMetadata({
 
-    navigator.mediaSession.setActionHandler('play',()=>audio.play());
-    navigator.mediaSession.setActionHandler('pause',()=>audio.pause());
+title:song.title,
 
-    navigator.mediaSession.setActionHandler('nexttrack',()=>{
-      currentIndex = (currentIndex + 1) % currentSongs.length;
-      playSong(currentIndex);
-    });
+artist:song.artist,
 
-    navigator.mediaSession.setActionHandler('previoustrack',()=>{
-      currentIndex = (currentIndex - 1 + currentSongs.length) % currentSongs.length;
-      playSong(currentIndex);
-    });
-  }
+artwork:[
+{
+src:song.cover,
+sizes:'512x512',
+type:'image/png'
+}
+]
+
+});
+
+navigator.mediaSession.setActionHandler(
+'play',
+()=>audio.play()
+);
+
+navigator.mediaSession.setActionHandler(
+'pause',
+()=>audio.pause()
+);
+
+navigator.mediaSession.setActionHandler(
+'nexttrack',
+()=>nextBtn.click()
+);
+
+navigator.mediaSession.setActionHandler(
+'previoustrack',
+()=>prevBtn.click()
+);
+
 }
 
-window.addEventListener('beforeinstallprompt',(e)=>{
+}
 
-  e.preventDefault();
+// INSTALL APP
 
-  deferredPrompt = e;
+window.addEventListener(
+'beforeinstallprompt',
+(e)=>{
 
-  installBtn.classList.remove('hidden');
-});
+e.preventDefault();
 
-installBtn.addEventListener('click',async()=>{
+deferredPrompt=e;
 
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-  }
-});
+document
+.getElementById('installBtn')
+.classList.remove('hidden');
 
-// PWA Manifest
-const manifest = {
-  name:'YSN MUSIC',
-  short_name:'NeonMusic',
-  start_url:'./',
-  display:'standalone',
-  background_color:'#000000',
-  theme_color:'#00ff99',
-  orientation:'portrait',
-  icons:[
-    {
-      src:'https://cdn-icons-png.flaticon.com/512/727/727245.png',
-      sizes:'512x512',
-      type:'image/png'
-    }
-  ]
+}
+);
+
+installBtn.onclick=async()=>{
+
+if(deferredPrompt){
+
+deferredPrompt.prompt();
+
+}
+
 };
 
-const manifestBlob = new Blob([
-  JSON.stringify(manifest)
-],{type:'application/json'});
-
-const manifestURL = URL.createObjectURL(manifestBlob);
-
-document.querySelector('link[rel="manifest"]')?.remove();
-
-const manifestLink = document.createElement('link');
-manifestLink.rel='manifest';
-manifestLink.href=manifestURL;
-document.head.appendChild(manifestLink);
-
 // SERVICE WORKER
+
 if('serviceWorker' in navigator){
 
-  const swCode = `
-    const CACHE = 'neon-music-v1';
+const sw=`
 
-    self.addEventListener('install',event=>{
-      event.waitUntil(
-        caches.open(CACHE).then(cache=>{
-          return cache.addAll(['./']);
-        })
-      );
-    });
+const CACHE='ysn-music-v5';
 
-    self.addEventListener('fetch',event=>{
-      event.respondWith(
-        caches.match(event.request).then(response=>{
-          return response || fetch(event.request);
-        })
-      );
-    });
-  `;
+self.addEventListener('install',e=>{
 
-  const blob = new Blob([swCode],{
-    type:'application/javascript'
-  });
+e.waitUntil(
 
-  const swURL = URL.createObjectURL(blob);
+caches.open(CACHE).then(cache=>{
 
-  navigator.serviceWorker.register(swURL);
-}
+return cache.addAll(['./']);
 
-// TABS
-const tabs = document.querySelectorAll('.tab-btn');
+})
 
-tabs.forEach(btn=>{
+);
 
-  btn.addEventListener('click',()=>{
-
-    tabs.forEach(b=>b.classList.remove('active-tab'));
-
-    btn.classList.add('active-tab');
-
-    if(btn.dataset.tab === 'downloads'){
-
-      songList.classList.add('hidden');
-      downloadsList.classList.remove('hidden');
-
-    }else{
-
-      songList.classList.remove('hidden');
-      downloadsList.classList.add('hidden');
-    }
-  });
 });
 
-// Default Trending Music Feed
-loadSongs('Trending songs Drake Taylor Swift Diljit Dosanjh Arijit Singh AP Dhillon Karan Aujla Bollywood Punjabi English');
-loadDownloads();
+self.addEventListener('fetch',e=>{
+
+e.respondWith(
+
+caches.match(e.request)
+.then(r=>r || fetch(e.request))
+
+);
+
+});
+
+`;
+
+const blob=
+new Blob([sw],{
+type:'text/javascript'
+});
+
+const swURL=
+URL.createObjectURL(blob);
+
+navigator.serviceWorker.register(swURL);
+
+}
+
+// MANIFEST
+
+const manifest={
+
+name:'YSN MUSIC',
+
+short_name:'YSN MUSIC',
+
+start_url:'./',
+
+display:'standalone',
+
+background_color:'#000000',
+
+theme_color:'#00ff99',
+
+icons:[
+{
+src:'https://cdn-icons-png.flaticon.com/512/727/727245.png',
+sizes:'512x512',
+type:'image/png'
+}
+]
+
+};
+
+const manifestBlob=
+new Blob(
+[JSON.stringify(manifest)],
+{type:'application/json'}
+);
+
+const manifestURL=
+URL.createObjectURL(manifestBlob);
+
+const manifestLink=
+document.createElement('link');
+
+manifestLink.rel='manifest';
+
+manifestLink.href=manifestURL;
+
+document.head.appendChild(manifestLink);
+
+// LOAD DEFAULT TRENDING SONGS
+
+loadSongs(
+defaultSongs.join(' ')
+);
+
 </script>
 
 </body>
